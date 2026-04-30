@@ -96,6 +96,7 @@ docker-compose logs -f
 | `BUB_SKILLS` | Skills 目录（沙箱内只读） | `~/.agents/skills` |
 | `BUB_WEIXIN_DATA` | 微信数据目录（沙箱内可写） | `~/.openclaw/openclaw-weixin` |
 | `BUB_FEISHU_HOME` | Feishu CLI 认证目录（沙箱内可写） | `~/.feishu` |
+| `BUB_HOME` | Bub 主目录（tapes、配置） | `~/.bub` |
 
 ### Agent 运行时
 
