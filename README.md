@@ -12,6 +12,8 @@ cd philip
 uv sync
 ```
 
+推荐插件（Web 搜索、定时任务）已作为依赖包含在 `pyproject.toml` 中，`uv sync` 时自动安装。
+
 ## 快速开始
 
 ### 1. 准备配置
@@ -69,13 +71,6 @@ docker-compose logs -f
 | weixin data | 可写 | 微信登录凭据 + 同步状态 |
 | feishu auth | 可写 | feishu CLI 登录凭据（`~/.feishu`，token 刷新需要写权限） |
 | bub home | 可写 | Bub 运行数据（tapes、配置） |
-
-## 推荐插件
-
-宿主机模式下，`run-host.sh` 每次执行前会自动预装以下插件：
-
-- `bub-web-search@main` — Web 搜索能力
-- `bub-schedule@main` — 定时任务
 
 ## 配置参考
 

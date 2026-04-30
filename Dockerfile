@@ -26,10 +26,6 @@ RUN uv sync --frozen --no-dev --no-install-project
 COPY README.md ./
 RUN uv sync --frozen --no-dev
 
-# Install bub plugins
-RUN uv run bub install bub-web-search@main
-RUN uv run bub install bub-schedule@main
-
 # Copy entrypoint script (unified entry for service and debugging)
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
