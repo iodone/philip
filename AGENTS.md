@@ -72,6 +72,11 @@ uv run pytest
 uv build
 ```
 
+说明：
+
+- `uv sync` 默认只安装运行时依赖，适用于正式运行和发布环境
+- `uv sync --group dev` 额外安装开发工具，仅用于本地开发、检查和测试
+
 ### 3.2 完整开发流程
 
 ```bash
@@ -217,6 +222,8 @@ dependencies = [
 ### 9.2 开发依赖
 
 开发工具统一放在 `pyproject.toml` 的 `[dependency-groups].dev` 中。
+
+正式发布版本默认不会安装 `dev` 依赖；只有显式执行 `uv sync --group dev` 时才会安装开发工具。
 
 ---
 
