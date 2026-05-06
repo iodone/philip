@@ -1,14 +1,14 @@
 [project]
 name = "philip"
-version = "0.1.0"
+version = "0.2.0"
 description = "Bub main entrypoint project — startup, sandbox, and plugin assembly"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "bub>=0.3.5",
+    "bub == 0.3.6",
     "bub-im-bridge @ git+https://github.com/iodone/bub-im-bridge.git",
-    "bub-web-search @ git+https://github.com/bubbuild/bub-contrib.git@main#subdirectory=packages/bub-web-search",
-    "bub-schedule @ git+https://github.com/bubbuild/bub-contrib.git@main#subdirectory=packages/bub-schedule",
+    ## "bub-web-search @ git+https://github.com/bubbuild/bub-contrib.git@main#subdirectory=packages/bub-web-search",
+    ## "bub-schedule @ git+https://github.com/bubbuild/bub-contrib.git@main#subdirectory=packages/bub-schedule",
 ]
 
 [build-system]
