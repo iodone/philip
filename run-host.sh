@@ -113,6 +113,9 @@ append_bind_if_dir wr "$HOME/.config"
 append_bind_if_dir wr "$HOME/.cache"
 append_bind_if_dir wr "$HOME/.kyuubi"
 append_bind_if_dir wr "$HOME/.opencli"
+# Git config and SSH keys (read-only, for git operations in sandbox)
+[ -f "$HOME/.gitconfig" ] && BOXSH_ARGS="$BOXSH_ARGS --bind ro:$HOME/.gitconfig"
+append_bind_if_dir ro "$HOME/.ssh"
 
 # Sandbox init: HOME is the real user home, TMPDIR in BUB_HOME for isolation
 SANDBOX_INIT="export HOME=$HOME \
