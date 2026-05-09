@@ -1,8 +1,23 @@
 # Philip
 
-Bub 主入口项目 — 启动、沙箱、plugin 组装。
+Philip 是一个基于 [Bub](https://github.com/bubbuild/bub) 框架的多渠道 AI Agent 网关，支持飞书、Telegram、微信，通过 [boxsh](https://github.com/xicilion/boxsh) 沙箱隔离执行。它负责启动、沙箱管理和 plugin 组装，是 Bub 生态的主入口项目。
 
-通过 [boxsh](https://github.com/xicilion/boxsh) 沙箱运行 [Bub](https://github.com/bubbuild/bub) 框架，提供宿主机模式和 Docker 模式两种部署方式。
+<!-- TODO: 加一张飞书对话截图或终端运行截图 -->
+
+## 项目结构
+
+```
+philip/
+├── run-host.sh          # 宿主机模式启动脚本
+├── entrypoint.sh        # Docker 容器入口
+├── docker-compose.yml   # Docker 模式编排
+├── Dockerfile           # 容器镜像定义
+├── .env.example         # 配置模板
+├── pyproject.toml       # Python 依赖（含推荐插件）
+├── docs/
+│   └── DOCKER_USAGE.md  # Docker 详细使用文档
+└── AGENTS.md            # Agent 运行规则
+```
 
 ## 安装
 
@@ -12,67 +27,41 @@ cd philip
 uv sync
 ```
 
-推荐插件（Web 搜索、定时任务）已作为依赖包含在 `pyproject.toml` 中，`uv sync` 时自动安装。
-
 ## 快速开始
-
-### 1. 准备配置
 
 ```bash
 cp .env.example .env
-```
+# 编辑 .env，填入 BUB_MODEL、BUB_API_KEY、BUB_WORKSPACE
 
-编辑 `.env`，填入必要配置（至少需要 `BUB_MODEL`、`BUB_API_KEY`、`BUB_WORKSPACE`）。
-
-### 2. 选择部署模式
-
-#### 宿主机模式（推荐开发调试）
-
-直接在宿主机用 boxsh 沙箱运行，无需 Docker。要求 boxsh >= 2.1.0。
-
-```bash
+# 宿主机模式（开发调试）
 ./run-host.sh
-```
 
-> **注意：** `./run-host.sh shell` 交互模式因 boxsh 自身限制暂不支持，仅可使用 `./run-host.sh` 启动网关服务。
-
-#### Docker 模式（推荐生产部署）
-
-```bash
-# 微信渠道需要先登录
-uv run -m bub_im_bridge login
-
-# 启动容器
+# 或 Docker 模式（生产部署）
 docker-compose up -d
-
-# 查看日志
-docker-compose logs -f
 ```
 
-📖 **详细 Docker 文档**：[docs/DOCKER_USAGE.md](docs/DOCKER_USAGE.md)
+## 部署模式
 
-## Workspace 路径映射
+| | 宿主机模式 | Docker 模式 |
+|---|---|---|
+| **适用场景** | 开发调试 | 生产部署 |
+| **沙箱** | boxsh 直接运行 | boxsh in container |
+| **workspace 写入** | 直接读写 `$BUB_WORKSPACE` | COW upper（`$BUB_BOXSH`） |
+| **依赖** | boxsh >= 2.1.0 | Docker + Docker Compose |
+| **启动** | `./run-host.sh` | `docker-compose up -d` |
 
-| 角色 | Docker 模式 | 宿主机模式 |
-|------|-------------|------------|
-| 基座 workspace | `/workspace-base`（来自 `$BUB_WORKSPACE`） | `$BUB_WORKSPACE` |
-| 写入层 | `/workspace`（来自 `$BUB_BOXSH`，COW upper） | `$BUB_WORKSPACE`（直接读写） |
-| Runtime workspace | `/workspace` | `$BUB_WORKSPACE` |
-
-> **重要：** Docker 模式使用 `BUB_BOXSH` 作为 COW upper；宿主机模式直接读写 `BUB_WORKSPACE`。App 代码通过 `bub -w` 参数动态获取路径，不硬编码任何路径。
-
-## 沙箱保护
+## 沙箱权限
 
 | 目录 | 权限 | 说明 |
 |------|------|------|
 | workspace | 宿主机模式可写 / Docker 模式 COW | Agent 工作空间 |
-| project repo | 宿主机模式可写 | `run-host.sh` 所在仓库；`uv run` 需要写 repo-local `.venv` |
+| project repo | 宿主机模式可写 | `run-host.sh` 所在仓库 |
 | skills | 只读 | Bub 技能目录 |
 | weixin data | 可写 | 微信登录凭据 + 同步状态 |
-| feishu auth | 可写 | feishu CLI 登录凭据（`~/.feishu`，token 刷新需要写权限） |
+| feishu auth | 可写 | feishu CLI 登录凭据 |
 | bub home | 可写 | Bub 运行数据（tapes、配置） |
 
-## 配置参考
+## 配置
 
 ### 通用配置
 
@@ -89,8 +78,8 @@ docker-compose logs -f
 |--------|------|--------|
 | `BUB_BOXSH` | Docker 模式 COW upper 层 | `~/work/boxsh/philip` |
 | `BUB_SKILLS` | Skills 目录（沙箱内只读） | `~/.agents/skills` |
-| `BUB_WEIXIN_DATA` | 微信数据目录（沙箱内可写） | `~/.openclaw/openclaw-weixin` |
-| `BUB_FEISHU_HOME` | Feishu CLI 认证目录（沙箱内可写） | `~/.feishu` |
+| `BUB_WEIXIN_DATA` | 微信数据目录 | `~/.openclaw/openclaw-weixin` |
+| `BUB_FEISHU_HOME` | Feishu CLI 认证目录 | `~/.feishu` |
 | `BUB_HOME` | Bub 主目录（tapes、配置） | `~/.bub` |
 
 ### Agent 运行时
@@ -121,19 +110,11 @@ docker-compose logs -f
 | `BUB_FEISHU_ALLOW_USERS` | 允许的用户 open_id，逗号分隔 | ❌ |
 | `BUB_FEISHU_ALLOW_CHATS` | 允许的 Chat ID，逗号分隔 | ❌ |
 | `BUB_FEISHU_BOT_OPEN_ID` | 机器人 open_id，用于群聊 @检测 | ❌ |
-| `BUB_FEISHU_BOT_NAME` | 机器人显示名称，用于 @名称 匹配（大小写不敏感） | ❌ |
+| `BUB_FEISHU_BOT_NAME` | 机器人显示名称，用于 @名称 匹配 | ❌ |
 | `BUB_FEISHU_QUEUE_MAX_LENGTH` | 消息队列最大长度，0=不限制 | 0 |
-| `BUB_FEISHU_ADMIN_USERS` | 管理员 open_id，逗号分隔；管理员消息绕过排队，可发送 `,cancel` 取消任务 | ❌ |
+| `BUB_FEISHU_ADMIN_USERS` | 管理员 open_id，绕过排队 | ❌ |
 
-> **获取机器人 open_id 的方式**：
->
-> 方式一：启动服务后在群聊中 @机器人，查看日志输出的 `mentions.id.open_id`
->
-> 方式二：通过 API 获取：
-> ```bash
-> curl -X GET "https://open.feishu.cn/open-apis/bot/v3/info/" \
->   -H "Authorization: Bearer <tenant_access_token>"
-> ```
+> **获取机器人 open_id**：启动服务后在群聊中 @机器人，查看日志输出的 `mentions.id.open_id`；或通过 [Bot Info API](https://open.feishu.cn/open-apis/bot/v3/info/) 获取。
 
 ### Telegram
 
@@ -153,16 +134,26 @@ docker-compose logs -f
 
 ## Docker 调试
 
+三种进入容器的方式，适用场景不同：
+
 ```bash
-# 启动与 bub 同配置的 boxsh 调试实例
+# 1. 启动与 bub 同配置的调试实例（boxsh 沙箱内）
 docker-compose run --rm bub /entrypoint.sh shell
 
-# 查看当前运行态
+# 2. 进入正在运行的容器（boxsh 沙箱内）
 docker-compose exec bub /entrypoint.sh shell
 
-# 进入原始镜像环境（绕过 boxsh）
+# 3. 进入原始镜像环境（绕过 boxsh，用于排查沙箱问题）
 docker-compose run --rm --entrypoint sh bub
 ```
+
+| 方式 | 环境 | 用途 |
+|------|------|------|
+| `run ... shell` | boxsh 沙箱 | 调试与运行态一致的环境 |
+| `exec ... shell` | boxsh 沙箱 | 连接已运行容器，查看运行态 |
+| `--entrypoint sh` | 原始镜像 | 排查沙箱本身的问题 |
+
+📖 更多 Docker 用法见 [docs/DOCKER_USAGE.md](docs/DOCKER_USAGE.md)
 
 ## 常见问题
 
