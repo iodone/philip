@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "bub == 0.3.6",
-    "bub-im-bridge @ git+https://github.com/iodone/bub-im-bridge.git@v0.5.0",
+    "bub-im-bridge @ git+https://github.com/iodone/bub-im-bridge.git@v0.5.1",
     "bub-web-search @ git+https://github.com/bubbuild/bub-contrib.git@main#subdirectory=packages/bub-web-search",
     "bub-schedule @ git+https://github.com/bubbuild/bub-contrib.git@main#subdirectory=packages/bub-schedule",
 ]
