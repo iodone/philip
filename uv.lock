@@ -275,7 +275,7 @@ wheels = [
 [[package]]
 name = "bub-im-bridge"
 version = "0.5.0"
-source = { git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.5.0#41d81028583f873cc5c3c31fe159246efc8a7859" }
+source = { git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.5.0#169cce2f7adc418a90811e17b48ae226c4c6780b" }
 dependencies = [
     { name = "bub" },
     { name = "lark-oapi" },
