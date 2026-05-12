@@ -5,11 +5,16 @@ description = "Bub main entrypoint project — startup, sandbox, and plugin asse
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "bub == 0.3.6",
+    "bub",
     "bub-im-bridge @ git+https://github.com/iodone/bub-im-bridge.git@v0.5.1",
-    "bub-web-search @ git+https://github.com/bubbuild/bub-contrib.git@main#subdirectory=packages/bub-web-search",
-    "bub-schedule @ git+https://github.com/bubbuild/bub-contrib.git@main#subdirectory=packages/bub-schedule",
+    "bub-web-search",
+    "bub-schedule",
 ]
+
+[tool.uv.sources]
+bub = { path = "../bub", editable = true }
+bub-web-search = { path = "../bub-contrib/packages/bub-web-search", editable = true }
+bub-schedule = { path = "../bub-contrib/packages/bub-schedule", editable = true }
 
 [dependency-groups]
 dev = [

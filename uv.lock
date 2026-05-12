@@ -250,11 +250,12 @@ wheels = [
 
 [[package]]
 name = "bub"
-version = "0.3.6"
-source = { registry = "https://pypi.org/simple" }
+source = { editable = "../bub" }
 dependencies = [
     { name = "aiohttp" },
     { name = "any-llm-sdk" },
+    { name = "httpx", extra = ["socks"] },
+    { name = "inquirer-textual" },
     { name = "loguru" },
     { name = "pluggy" },
     { name = "prompt-toolkit" },
@@ -267,9 +268,37 @@ dependencies = [
     { name = "rich" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4c/fb/49cc21b69b1adfbaa6950d1e6e7edf30a3a40248b7017748dbee1595bca0/bub-0.3.6.tar.gz", hash = "sha256:d165e1f716f675e0b110971a3620f39e15829c6b5ad5305b3d23cf444648bfe5", size = 86177, upload-time = "2026-04-16T08:50:45.601Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a3/aa/6bc2906cf27b60f287585cf564cbceaa090f8246a9ae0ec54e232b12b3af/bub-0.3.6-py3-none-any.whl", hash = "sha256:24fba14b488c7fb6b97a7b10366dfdcb659390672c6f5dcdd4aa4dc16233b6d7", size = 83783, upload-time = "2026-04-16T08:50:44.146Z" },
+
+[package.metadata]
+requires-dist = [
+    { name = "aiohttp", specifier = ">=3.13.3" },
+    { name = "any-llm-sdk", extras = ["anthropic"] },
+    { name = "httpx", extras = ["socks"], specifier = ">=0.28.1" },
+    { name = "inquirer-textual", specifier = ">=0.5.1" },
+    { name = "logfire", marker = "extra == 'logfire'", specifier = ">=4.31.0" },
+    { name = "loguru", specifier = ">=0.7.2" },
+    { name = "pluggy", specifier = ">=1.6.0" },
+    { name = "prompt-toolkit", specifier = ">=3.0.0" },
+    { name = "pydantic", specifier = ">=2.0.0" },
+    { name = "pydantic-settings", specifier = ">=2.0.0" },
+    { name = "python-telegram-bot", specifier = ">=21.0" },
+    { name = "pyyaml", specifier = ">=6.0.0" },
+    { name = "rapidfuzz", specifier = ">=3.14.3" },
+    { name = "republic", specifier = ">=0.5.4" },
+    { name = "rich", specifier = ">=13.0.0" },
+    { name = "typer", specifier = ">=0.9.0" },
+]
+provides-extras = ["logfire"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mypy", specifier = ">=0.991" },
+    { name = "prek", specifier = ">=0.3.1" },
+    { name = "pytest", specifier = ">=7.2.0" },
+    { name = "pytest-asyncio", specifier = ">=1.3.0" },
+    { name = "ruff", specifier = ">=0.11.5" },
+    { name = "tox-uv", specifier = ">=1.11.3" },
+    { name = "types-pyyaml", specifier = ">=6.0.12" },
 ]
 
 [[package]]
@@ -285,16 +314,28 @@ dependencies = [
 [[package]]
 name = "bub-schedule"
 version = "0.1.0"
-source = { git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&rev=main#96aaee48cf1940cff4a6bc85ee4589a6b38fe5e6" }
+source = { editable = "../bub-contrib/packages/bub-schedule" }
 dependencies = [
     { name = "apscheduler" },
     { name = "republic" },
 ]
 
+[package.metadata]
+requires-dist = [
+    { name = "apscheduler", specifier = ">=3.11.2" },
+    { name = "republic", specifier = ">=0.5.6" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=9.0.3" },
+    { name = "pytest-asyncio", specifier = ">=1.3.0" },
+]
+
 [[package]]
 name = "bub-web-search"
 version = "0.1.0"
-source = { git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&rev=main#96aaee48cf1940cff4a6bc85ee4589a6b38fe5e6" }
+source = { editable = "../bub-contrib/packages/bub-web-search" }
 
 [[package]]
 name = "certifi"
@@ -737,6 +778,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl", hash = "sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad", size = 73517, upload-time = "2024-12-06T15:37:21.509Z" },
 ]
 
+[package.optional-dependencies]
+socks = [
+    { name = "socksio" },
+]
+
 [[package]]
 name = "idna"
 version = "3.13"
@@ -753,6 +799,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/72/34/14ca021ce8e5dfedc35312d08ba8bf51fdd999c576889fc2c24cb97f4f10/iniconfig-2.3.0.tar.gz", hash = "sha256:c76315c77db068650d49c5b56314774a7804df16fee4402c1f19d6d15d8c4730", size = 20503, upload-time = "2025-10-18T21:55:43.219Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/cb/b1/3846dd7f199d53cb17f49cba7e651e9ce294d8497c8c150530ed11865bb8/iniconfig-2.3.0-py3-none-any.whl", hash = "sha256:f631c04d2c48c52b84d0d0549c99ff3859c98df65b3101406327ecc7d53fbf12", size = 7484, upload-time = "2025-10-18T21:55:41.639Z" },
+]
+
+[[package]]
+name = "inquirer-textual"
+version = "0.5.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "textual" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ba/6c/544e4216e2dc66f931f7bd65c90b91fc9a19a4701e0cf3bee207eaeecb54/inquirer_textual-0.5.1.tar.gz", hash = "sha256:4e4604a303ba58e7321d96044ba235b3332f2f330b081282914be504e1f59c71", size = 3666912, upload-time = "2026-03-24T21:41:46.598Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a2/4f/cf9ee5811c2e74e4be29e5500c8121710dd8e35d241907a0e768cbdc06cb/inquirer_textual-0.5.1-py3-none-any.whl", hash = "sha256:7e5aca4ea112d947d9bb3e096477bcb3555a9a44fd3a3daae6f28a2487da7a5a", size = 31612, upload-time = "2026-03-24T21:41:44.294Z" },
 ]
 
 [[package]]
@@ -916,6 +974,18 @@ wheels = [
 ]
 
 [[package]]
+name = "linkify-it-py"
+version = "2.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "uc-micro-py" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/2e/c9/06ea13676ef354f0af6169587ae292d3e2406e212876a413bf9eece4eb23/linkify_it_py-2.1.0.tar.gz", hash = "sha256:43360231720999c10e9328dc3691160e27a718e280673d444c38d7d3aaa3b98b", size = 29158, upload-time = "2026-03-01T07:48:47.683Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b4/de/88b3be5c31b22333b3ca2f6ff1de4e863d8fe45aaea7485f591970ec1d3e/linkify_it_py-2.1.0-py3-none-any.whl", hash = "sha256:0d252c1594ecba2ecedc444053db5d3a9b7ec1b0dd929c8f1d74dce89f86c05e", size = 19878, upload-time = "2026-03-01T07:48:46.098Z" },
+]
+
+[[package]]
 name = "loguru"
 version = "0.7.3"
 source = { registry = "https://pypi.org/simple" }
@@ -938,6 +1008,23 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/5b/f5/4ec618ed16cc4f8fb3b701563655a69816155e79e24a17b651541804721d/markdown_it_py-4.0.0.tar.gz", hash = "sha256:cb0a2b4aa34f932c007117b194e945bd74e0ec24133ceb5bac59009cda1cb9f3", size = 73070, upload-time = "2025-08-11T12:57:52.854Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/94/54/e7d793b573f298e1c9013b8c4dade17d481164aa517d1d7148619c2cedbf/markdown_it_py-4.0.0-py3-none-any.whl", hash = "sha256:87327c59b172c5011896038353a81343b6754500a08cd7a4973bb48c6d578147", size = 87321, upload-time = "2025-08-11T12:57:51.923Z" },
+]
+
+[package.optional-dependencies]
+linkify = [
+    { name = "linkify-it-py" },
+]
+
+[[package]]
+name = "mdit-py-plugins"
+version = "0.6.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "markdown-it-py" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d8/3d/e0e8d9d1cee04f758120915e2b2a3a07eb41f8cf4654b4734788a522bcd1/mdit_py_plugins-0.6.0.tar.gz", hash = "sha256:2436f14a7295837ac9228a36feeabda867c4abc488c8d019ad5c0bda88eee040", size = 56025, upload-time = "2026-05-07T12:20:42.295Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/71/d6/48f5b9e44e2e760855d7b489b1317cd7620e82dcb73197961e5cc1391348/mdit_py_plugins-0.6.0-py3-none-any.whl", hash = "sha256:f7e7a25d8b616fee99cb1e330da73451d11a8061baf39bb9663ab9ce0e005b90", size = 66655, upload-time = "2026-05-07T12:20:41.226Z" },
 ]
 
 [[package]]
@@ -1171,10 +1258,10 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bub", specifier = "==0.3.6" },
+    { name = "bub", editable = "../bub" },
     { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.5.1" },
-    { name = "bub-schedule", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&rev=main" },
-    { name = "bub-web-search", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&rev=main" },
+    { name = "bub-schedule", editable = "../bub-contrib/packages/bub-schedule" },
+    { name = "bub-web-search", editable = "../bub-contrib/packages/bub-web-search" },
 ]
 
 [package.metadata.requires-dev]
@@ -1753,6 +1840,32 @@ wheels = [
 ]
 
 [[package]]
+name = "socksio"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f8/5c/48a7d9495be3d1c651198fd99dbb6ce190e2274d0f28b9051307bdec6b85/socksio-1.0.0.tar.gz", hash = "sha256:f88beb3da5b5c38b9890469de67d0cb0f9d494b78b106ca1845f96c10b91c4ac", size = 19055, upload-time = "2020-04-17T15:50:34.664Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/37/c3/6eeb6034408dac0fa653d126c9204ade96b819c936e136c5e8a6897eee9c/socksio-1.0.0-py3-none-any.whl", hash = "sha256:95dc1f15f9b34e8d7b16f06d74b8ccf48f609af32ab33c608d08761c5dcbb1f3", size = 12763, upload-time = "2020-04-17T15:50:31.878Z" },
+]
+
+[[package]]
+name = "textual"
+version = "8.2.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "markdown-it-py", extra = ["linkify"] },
+    { name = "mdit-py-plugins" },
+    { name = "platformdirs" },
+    { name = "pygments" },
+    { name = "rich" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/62/1e/1eedc5bac184d00aaa5f9a99095f7e266af3ec46fa926c1051be5d358da1/textual-8.2.5.tar.gz", hash = "sha256:6c894e65a879dadb4f6cf46ddcfedb0173ff7e0cb1fe605ff7b357a597bdbc90", size = 1851596, upload-time = "2026-04-30T08:02:58.956Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cd/01/c4555f9c8a692ff83d84930150540f743ce94c89234f9e9a15ff4baba3a8/textual-8.2.5-py3-none-any.whl", hash = "sha256:247d2aa2faf222749c321f88a736247f37ee2c023604079c7490bfacddfcd4b2", size = 727050, upload-time = "2026-04-30T08:03:01.421Z" },
+]
+
+[[package]]
 name = "tqdm"
 version = "4.67.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1819,6 +1932,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/8b/2e/c14812d3d4d9cd1773c6be938f89e5735a1f11a9f184ac3639b93cef35d5/tzlocal-5.3.1.tar.gz", hash = "sha256:cceffc7edecefea1f595541dbd6e990cb1ea3d19bf01b2809f362a03dd7921fd", size = 30761, upload-time = "2025-03-05T21:17:41.549Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c2/14/e2a54fabd4f08cd7af1c07030603c3356b74da07f7cc056e600436edfa17/tzlocal-5.3.1-py3-none-any.whl", hash = "sha256:eb1a66c3ef5847adf7a834f1be0800581b683b5608e74f86ecbcef8ab91bb85d", size = 18026, upload-time = "2025-03-05T21:17:39.857Z" },
+]
+
+[[package]]
+name = "uc-micro-py"
+version = "2.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/78/67/9a363818028526e2d4579334460df777115bdec1bb77c08f9db88f6389f2/uc_micro_py-2.0.0.tar.gz", hash = "sha256:c53691e495c8db60e16ffc4861a35469b0ba0821fe409a8a7a0a71864d33a811", size = 6611, upload-time = "2026-03-01T06:31:27.526Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/61/73/d21edf5b204d1467e06500080a50f79d49ef2b997c79123a536d4a17d97c/uc_micro_py-2.0.0-py3-none-any.whl", hash = "sha256:3603a3859af53e5a39bc7677713c78ea6589ff188d70f4fee165db88e22b242c", size = 6383, upload-time = "2026-03-01T06:31:26.257Z" },
 ]
 
 [[package]]
