@@ -21,6 +21,7 @@ dev = [
     "black>=24.0",
     "mypy>=1.10",
     "pytest>=8.0",
+    "pytest-asyncio>=0.24",
     "pytest-cov>=5.0",
     "ruff>=0.3.0",
 ]
@@ -58,3 +59,4 @@ target-version = ["py312"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+asyncio_mode = "auto"
