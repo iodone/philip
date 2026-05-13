@@ -14,6 +14,8 @@ class PhilipPlugin:
 
     def __init__(self, framework: BubFramework) -> None:
         self.framework = framework
+        # Import vision tools to register them in bub's global tool REGISTRY
+        import philip.vision_tools  # noqa: F401
 
     @hookimpl
     async def load_state(self, message: Any, session_id: str) -> State:
