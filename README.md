@@ -90,6 +90,18 @@ docker-compose up -d
 | `BUB_MAX_TOKENS` | 最大 token 数 | 16384 |
 | `BUB_MODEL_TIMEOUT_SECONDS` | 模型调用超时（秒） | 300 |
 
+### Vision tool（可选）
+
+Philip 可为含图片的消息提供视觉分析能力。主模型在判断图片内容与问题相关时，调用 `vision.inspect_current_images` 工具，由单独配置的多模态模型读取图片并返回压缩文字观察结果。
+
+| 配置项 | 说明 | 必需 |
+|--------|------|:----:|
+| `BUB_VISION_MODEL` | 多模态模型，格式 `provider:model_id` | ✅ |
+| `BUB_VISION_API_KEY` | 视觉模型 API 密钥 | ✅ |
+| `BUB_VISION_API_BASE` | 视觉模型 API 端点 | ✅ |
+
+> 不配置时，视觉工具不可用，不影响主模型的正常文字推理能力。
+
 ### Channel Manager
 
 | 配置项 | 说明 | 默认值 |
