@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
+from bub.envelope import content_of, field_of
 from bub.framework import BubFramework
 from bub.hookspecs import hookimpl
 from bub.types import State
@@ -16,6 +18,20 @@ class PhilipPlugin:
         self.framework = framework
         # Import vision tools to register them in bub's global tool REGISTRY
         import philip.vision_tools  # noqa: F401
+
+    @hookimpl
+    async def build_prompt(
+        self, message: Any, session_id: str, state: State
+    ) -> str:
+        """Build a text-only prompt — images go through vision tool, not main model."""
+        content = content_of(message)
+        if content.startswith(","):
+            message.kind = "command"
+            return content
+        context = field_of(message, "context_str")
+        now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        context_prefix = f"{context}\n---Date: {now}---\n" if context else ""
+        return f"{context_prefix}{content}"
 
     @hookimpl
     async def load_state(self, message: Any, session_id: str) -> State:

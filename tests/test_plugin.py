@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from importlib import metadata
 
+import pytest
+
 from bub.channels.message import ChannelMessage, MediaItem
 from bub.types import State
 
@@ -73,3 +75,66 @@ def test_system_prompt_omits_hint_when_no_images():
     }
     prompt = plugin.system_prompt(prompt="ignored", state=state)
     assert "vision.inspect_current_images" not in prompt
+
+
+# ---------------------------------------------------------------------------
+# build_prompt regression: main model must never see image_url parts
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_build_prompt_returns_str_for_image_message():
+    """Regression: messages with images must produce a plain text prompt,
+    not a multimodal list with image_url parts."""
+    plugin = PhilipPlugin(framework=None)  # type: ignore[arg-type]
+    message = ChannelMessage(
+        session_id="feishu:123",
+        channel="feishu",
+        chat_id="123",
+        content="看看这张图",
+        media=[
+            MediaItem(type="image", mime_type="image/png", url="data:image/png;base64,abc")
+        ],
+    )
+    prompt = await plugin.build_prompt(message=message, session_id="s", state={})
+    # Must be a plain string — NOT a list with image_url parts
+    assert isinstance(prompt, str)
+    assert "看看这张图" in prompt
+    assert "image_url" not in prompt
+
+
+@pytest.mark.asyncio
+async def test_build_prompt_returns_str_for_text_message():
+    """Text-only messages should still produce a plain text prompt."""
+    plugin = PhilipPlugin(framework=None)  # type: ignore[arg-type]
+    message = ChannelMessage(
+        session_id="feishu:123",
+        channel="feishu",
+        chat_id="123",
+        content="hello world",
+    )
+    prompt = await plugin.build_prompt(message=message, session_id="s", state={})
+    assert isinstance(prompt, str)
+    assert "hello world" in prompt
+
+
+@pytest.mark.asyncio
+async def test_build_prompt_strips_images_but_preserves_text():
+    """The text content must be preserved even when images are stripped."""
+    plugin = PhilipPlugin(framework=None)  # type: ignore[arg-type]
+    message = ChannelMessage(
+        session_id="feishu:123",
+        channel="feishu",
+        chat_id="123",
+        content="分析这两张截图",
+        media=[
+            MediaItem(type="image", mime_type="image/png", url="data:image/png;base64,aaa"),
+            MediaItem(type="image", mime_type="image/jpeg", url="data:image/jpeg;base64,bbb"),
+        ],
+    )
+    prompt = await plugin.build_prompt(message=message, session_id="s", state={})
+    assert isinstance(prompt, str)
+    assert "分析这两张截图" in prompt
+    # No trace of multimodal content
+    assert "image_url" not in prompt
+    assert "data:image" not in prompt
