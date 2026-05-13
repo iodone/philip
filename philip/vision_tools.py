@@ -68,7 +68,7 @@ async def vision_inspect_tool(
     client = VisionClient(settings)
     try:
         observation = await client.inspect_images(
-            text=str(context.state.get("context", "")),
+            text=str(context.state.get("vision_current_text", "")),
             image_urls=image_urls,
             focus=params.focus,
         )

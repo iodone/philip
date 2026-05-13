@@ -78,7 +78,7 @@ async def test_tool_returns_observation_for_current_images(monkeypatch):
     fake_media = [
         {"media_item": FakeMediaItem(url="data:image/png;base64,abc"), "mime_type": "image/png"}
     ]
-    context = _make_context(media_items=fake_media, context="user asks about screenshot")
+    context = _make_context(media_items=fake_media, vision_current_text="user asks about screenshot")
 
     with patch("philip.vision_tools.VisionClient") as MockClient:
         instance = MockClient.return_value
@@ -167,3 +167,32 @@ async def test_tool_handles_vision_api_failure(monkeypatch):
 
     assert "failed" in result.lower()
     assert "API timeout" in result
+
+
+async def test_tool_passes_message_content_not_metadata_to_vision(monkeypatch):
+    """Regression: tool must pass message content (vision_current_text), not
+    the builtin context metadata (channel=$...|chat_id=...)."""
+    from philip.vision_tools import vision_inspect_tool
+
+    monkeypatch.setenv("BUB_VISION_MODEL", "openai:gpt-4.1-mini")
+    monkeypatch.setenv("BUB_VISION_API_KEY", "sk-test")
+    monkeypatch.setenv("BUB_VISION_API_BASE", "https://api.example.com/v1")
+
+    fake_media = [
+        {"media_item": FakeMediaItem(url="data:image/png;base64,abc"), "mime_type": "image/png"}
+    ]
+    # Simulate real state: context is metadata, vision_current_text is the actual message
+    context = _make_context(
+        media_items=fake_media,
+        context="channel=$cli|chat_id=default",  # builtin metadata — should NOT be passed
+        vision_current_text="帮我看看这张报错截图怎么修",  # actual message — should be passed
+    )
+
+    with patch("philip.vision_tools.VisionClient") as MockClient:
+        instance = MockClient.return_value
+        instance.inspect_images = AsyncMock(return_value="observation")
+        await vision_inspect_tool(params=None, context=context)  # type: ignore[arg-type]
+
+    call_kwargs = instance.inspect_images.call_args.kwargs
+    assert call_kwargs["text"] == "帮我看看这张报错截图怎么修"
+    assert "channel=" not in call_kwargs["text"]

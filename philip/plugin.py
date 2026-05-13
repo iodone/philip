@@ -20,9 +20,12 @@ class PhilipPlugin:
     @hookimpl
     async def load_state(self, message: Any, session_id: str) -> State:
         images = _image_media(message)
+        # Store the actual message content (not metadata) for the vision tool
+        content = getattr(message, "content", "") or ""
         return {
             "vision_current_media": images,
             "vision_current_image_count": len(images),
+            "vision_current_text": content,
         }
 
     @hookimpl
