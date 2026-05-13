@@ -304,7 +304,7 @@ dev = [
 [[package]]
 name = "bub-im-bridge"
 version = "0.5.1"
-source = { git = "https://github.com/iodone/bub-im-bridge.git?rev=feat%2Ffeishu-image-media#b87156ae3053f3dfa19d756d6d0bc833927cf872" }
+source = { git = "https://github.com/iodone/bub-im-bridge.git?rev=ea0c070ea40474fcccb606d4812b23d5ddd00e97#ea0c070ea40474fcccb606d4812b23d5ddd00e97" }
 dependencies = [
     { name = "bub" },
     { name = "lark-oapi" },
@@ -1260,7 +1260,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "bub", editable = "../bub" },
-    { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?rev=feat%2Ffeishu-image-media" },
+    { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?rev=ea0c070ea40474fcccb606d4812b23d5ddd00e97" },
     { name = "bub-schedule", editable = "../bub-contrib/packages/bub-schedule" },
     { name = "bub-web-search", editable = "../bub-contrib/packages/bub-web-search" },
 ]

@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "bub",
-    "bub-im-bridge @ git+https://github.com/iodone/bub-im-bridge.git@feat/feishu-image-media",
+    "bub-im-bridge @ git+https://github.com/iodone/bub-im-bridge.git@ea0c070ea40474fcccb606d4812b23d5ddd00e97",
     "bub-web-search",
     "bub-schedule",
 ]
