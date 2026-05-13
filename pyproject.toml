@@ -5,17 +5,23 @@ description = "Bub main entrypoint project — startup, sandbox, and plugin asse
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "bub == 0.3.6",
-    "bub-im-bridge @ git+https://github.com/iodone/bub-im-bridge.git",
-    "bub-web-search @ git+https://github.com/bubbuild/bub-contrib.git@main#subdirectory=packages/bub-web-search",
-    "bub-schedule @ git+https://github.com/bubbuild/bub-contrib.git@main#subdirectory=packages/bub-schedule",
+    "bub",
+    "bub-im-bridge @ git+https://github.com/iodone/bub-im-bridge.git@v0.5.1",
+    "bub-web-search",
+    "bub-schedule",
 ]
+
+[tool.uv.sources]
+bub = { path = "../bub", editable = true }
+bub-web-search = { path = "../bub-contrib/packages/bub-web-search", editable = true }
+bub-schedule = { path = "../bub-contrib/packages/bub-schedule", editable = true }
 
 [dependency-groups]
 dev = [
     "black>=24.0",
     "mypy>=1.10",
     "pytest>=8.0",
+    "pytest-asyncio>=0.24",
     "pytest-cov>=5.0",
     "ruff>=0.3.0",
 ]
@@ -23,6 +29,9 @@ dev = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[project.entry-points.bub]
+philip = "philip.plugin:PhilipPlugin"
 
 [tool.hatch.metadata]
 allow-direct-references = true
@@ -50,3 +59,4 @@ target-version = ["py312"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+asyncio_mode = "auto"
