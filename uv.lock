@@ -303,8 +303,8 @@ dev = [
 
 [[package]]
 name = "bub-im-bridge"
-version = "0.5.1"
-source = { git = "https://github.com/iodone/bub-im-bridge.git?rev=4bac2be152d845552d38e4940a4381a5836a0998#4bac2be152d845552d38e4940a4381a5836a0998" }
+version = "0.6.0"
+source = { git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.6.0#44e36ea2333532546d7ba8dbb93a802e65524469" }
 dependencies = [
     { name = "bub" },
     { name = "lark-oapi" },
@@ -1260,7 +1260,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "bub", editable = "../bub" },
-    { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?rev=4bac2be152d845552d38e4940a4381a5836a0998" },
+    { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.6.0" },
     { name = "bub-schedule", editable = "../bub-contrib/packages/bub-schedule" },
     { name = "bub-web-search", editable = "../bub-contrib/packages/bub-web-search" },
 ]
