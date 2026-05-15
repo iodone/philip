@@ -304,7 +304,7 @@ dev = [
 [[package]]
 name = "bub-im-bridge"
 version = "0.6.1"
-source = { git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.6.1#6404ac44022fe28a62147451dbab6f6eac595f4e" }
+source = { git = "https://github.com/iodone/bub-im-bridge.git?rev=6404ac44022fe28a62147451dbab6f6eac595f4e#6404ac44022fe28a62147451dbab6f6eac595f4e" }
 dependencies = [
     { name = "bub" },
     { name = "lark-oapi" },
@@ -314,22 +314,10 @@ dependencies = [
 [[package]]
 name = "bub-schedule"
 version = "0.1.0"
-source = { editable = "../bub-contrib/packages/bub-schedule" }
+source = { git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&rev=e7b3a1e#e7b3a1e56ec154244cc24967437a7062f65c4db4" }
 dependencies = [
     { name = "apscheduler" },
     { name = "republic" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "apscheduler", specifier = ">=3.11.2" },
-    { name = "republic", specifier = ">=0.5.6" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=9.0.3" },
-    { name = "pytest-asyncio", specifier = ">=1.3.0" },
 ]
 
 [[package]]
@@ -1260,8 +1248,8 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "bub", editable = "../bub" },
-    { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.6.1" },
-    { name = "bub-schedule", editable = "../bub-contrib/packages/bub-schedule" },
+    { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?rev=6404ac44022fe28a62147451dbab6f6eac595f4e" },
+    { name = "bub-schedule", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&rev=e7b3a1e" },
     { name = "bub-web-search", editable = "../bub-contrib/packages/bub-web-search" },
 ]
 
