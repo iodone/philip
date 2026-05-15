@@ -250,7 +250,8 @@ wheels = [
 
 [[package]]
 name = "bub"
-source = { editable = "../bub" }
+version = "0.3.8"
+source = { git = "https://github.com/bubbuild/bub.git?branch=main#1c90e37ea102efd5d6497ae1c8f86d857df60e62" }
 dependencies = [
     { name = "aiohttp" },
     { name = "any-llm-sdk" },
@@ -269,42 +270,10 @@ dependencies = [
     { name = "typer" },
 ]
 
-[package.metadata]
-requires-dist = [
-    { name = "aiohttp", specifier = ">=3.13.3" },
-    { name = "any-llm-sdk", extras = ["anthropic"] },
-    { name = "httpx", extras = ["socks"], specifier = ">=0.28.1" },
-    { name = "inquirer-textual", specifier = ">=0.5.1" },
-    { name = "logfire", marker = "extra == 'logfire'", specifier = ">=4.31.0" },
-    { name = "loguru", specifier = ">=0.7.2" },
-    { name = "pluggy", specifier = ">=1.6.0" },
-    { name = "prompt-toolkit", specifier = ">=3.0.0" },
-    { name = "pydantic", specifier = ">=2.0.0" },
-    { name = "pydantic-settings", specifier = ">=2.0.0" },
-    { name = "python-telegram-bot", specifier = ">=21.0" },
-    { name = "pyyaml", specifier = ">=6.0.0" },
-    { name = "rapidfuzz", specifier = ">=3.14.3" },
-    { name = "republic", specifier = ">=0.5.4" },
-    { name = "rich", specifier = ">=13.0.0" },
-    { name = "typer", specifier = ">=0.9.0" },
-]
-provides-extras = ["logfire"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "mypy", specifier = ">=0.991" },
-    { name = "prek", specifier = ">=0.3.1" },
-    { name = "pytest", specifier = ">=7.2.0" },
-    { name = "pytest-asyncio", specifier = ">=1.3.0" },
-    { name = "ruff", specifier = ">=0.11.5" },
-    { name = "tox-uv", specifier = ">=1.11.3" },
-    { name = "types-pyyaml", specifier = ">=6.0.12" },
-]
-
 [[package]]
 name = "bub-im-bridge"
-version = "0.5.1"
-source = { git = "https://github.com/iodone/bub-im-bridge.git?rev=4bac2be152d845552d38e4940a4381a5836a0998#4bac2be152d845552d38e4940a4381a5836a0998" }
+version = "0.6.2"
+source = { git = "https://github.com/iodone/bub-im-bridge.git?tag=v0.6.2#0b95a118e44c0e9a8c61e4ee6b2d52aa8d36ed61" }
 dependencies = [
     { name = "bub" },
     { name = "lark-oapi" },
@@ -314,28 +283,16 @@ dependencies = [
 [[package]]
 name = "bub-schedule"
 version = "0.1.0"
-source = { editable = "../bub-contrib/packages/bub-schedule" }
+source = { git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&branch=main#e7b3a1e56ec154244cc24967437a7062f65c4db4" }
 dependencies = [
     { name = "apscheduler" },
     { name = "republic" },
 ]
 
-[package.metadata]
-requires-dist = [
-    { name = "apscheduler", specifier = ">=3.11.2" },
-    { name = "republic", specifier = ">=0.5.6" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=9.0.3" },
-    { name = "pytest-asyncio", specifier = ">=1.3.0" },
-]
-
 [[package]]
 name = "bub-web-search"
 version = "0.1.0"
-source = { editable = "../bub-contrib/packages/bub-web-search" }
+source = { git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&branch=main#e7b3a1e56ec154244cc24967437a7062f65c4db4" }
 
 [[package]]
 name = "certifi"
@@ -1259,10 +1216,10 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bub", editable = "../bub" },
-    { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?rev=4bac2be152d845552d38e4940a4381a5836a0998" },
-    { name = "bub-schedule", editable = "../bub-contrib/packages/bub-schedule" },
-    { name = "bub-web-search", editable = "../bub-contrib/packages/bub-web-search" },
+    { name = "bub", git = "https://github.com/bubbuild/bub.git?branch=main" },
+    { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?tag=v0.6.2" },
+    { name = "bub-schedule", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&branch=main" },
+    { name = "bub-web-search", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&branch=main" },
 ]
 
 [package.metadata.requires-dev]

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # run-host.sh - Run bub with boxsh sandbox directly on the host (no Docker)
 #
 # Usage:
@@ -59,7 +59,7 @@ expand_path() {
 append_bind_if_dir() {
     mode="$1"
     path="$2"
-    [ -d "$path" ] && BOXSH_ARGS="$BOXSH_ARGS --bind $mode:$path"
+    [ -d "$path" ] && BOXSH_ARGS+=("--bind" "$mode:$path")
 }
 
 BUB_WORKSPACE="$(expand_path "${BUB_WORKSPACE:?BUB_WORKSPACE not set}")"
@@ -80,13 +80,13 @@ UV_DATA_DIR="$(expand_path "${XDG_DATA_HOME:-$HOME/.local/share}/uv")"
 
 # Build boxsh arguments
 # HOME is the real user home — no remapping. Path protection via selective binds.
-BOXSH_ARGS="--sandbox --bind wr:$BUB_WORKSPACE --bind wr:$BUB_HOME"
+BOXSH_ARGS=("--sandbox" "--bind" "wr:$BUB_WORKSPACE" "--bind" "wr:$BUB_HOME")
 
 # If the project repo itself is outside BUB_WORKSPACE, it still needs to be
 # writable in host mode because `uv run` may update the repo-local `.venv`.
 case "$SCRIPT_DIR" in
   "$BUB_WORKSPACE"|"$BUB_WORKSPACE"/*) ;;
-  *) BOXSH_ARGS="$BOXSH_ARGS --bind wr:$SCRIPT_DIR" ;;
+  *) BOXSH_ARGS+=("--bind" "wr:$SCRIPT_DIR") ;;
 esac
 
 # uv binary and toolchain (Python installs, caches)
@@ -101,7 +101,7 @@ append_bind_if_dir ro "$PIPX_HOME"
 
 # Optional binds — real user directories, accessed at their real paths via ~
 # Skills directory (read-only)
-[ -d "$BUB_SKILLS" ] && BOXSH_ARGS="$BOXSH_ARGS --bind ro:$BUB_SKILLS"
+[ -d "$BUB_SKILLS" ] && BOXSH_ARGS+=("--bind" "ro:$BUB_SKILLS")
 # Weixin parent dir (ro for path resolution) and data dir (wr for sync state)
 BUB_WEIXIN_STATE_DIR="$(dirname "$BUB_WEIXIN_DATA")"
 append_bind_if_dir ro "$BUB_WEIXIN_STATE_DIR"
@@ -113,8 +113,10 @@ append_bind_if_dir wr "$HOME/.config"
 append_bind_if_dir wr "$HOME/.cache"
 append_bind_if_dir wr "$HOME/.kyuubi"
 append_bind_if_dir wr "$HOME/.opencli"
+append_bind_if_dir wr "$HOME/.lark-cli"
+append_bind_if_dir wr "$HOME/Library/Application Support/lark-cli"
 # Git config and SSH keys (read-only, for git operations in sandbox)
-[ -f "$HOME/.gitconfig" ] && BOXSH_ARGS="$BOXSH_ARGS --bind ro:$HOME/.gitconfig"
+[ -f "$HOME/.gitconfig" ] && BOXSH_ARGS+=("--bind" "ro:$HOME/.gitconfig")
 append_bind_if_dir ro "$HOME/.ssh"
 
 # Sandbox init: HOME is the real user home, TMPDIR in BUB_HOME for isolation
@@ -134,7 +136,7 @@ SANDBOX_INIT="export HOME=$HOME \
 # can exit and its children get reparented to PID 1, making them invisible
 # to the tree walk.
 run_supervised() {
-    boxsh $BOXSH_ARGS -c "$1" &
+    boxsh "${BOXSH_ARGS[@]}" -c "$1" &
     child=$!
 
     kill_tree() {
@@ -172,7 +174,7 @@ if [ "$1" = "shell" ] || [ "$1" = "sh" ]; then
       OPENCLAW_STATE_DIR="$BUB_WEIXIN_STATE_DIR" \
       CLAWDBOT_STATE_DIR="$BUB_WEIXIN_STATE_DIR" \
       PATH="$UV_BIN_DIR:$PATH" \
-      boxsh $BOXSH_ARGS
+      boxsh "${BOXSH_ARGS[@]}"
 fi
 
 # Otherwise, run the given command in the sandbox
