@@ -314,7 +314,7 @@ dependencies = [
 [[package]]
 name = "bub-schedule"
 version = "0.1.0"
-source = { git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&rev=e7b3a1e#e7b3a1e56ec154244cc24967437a7062f65c4db4" }
+source = { git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&rev=main#e7b3a1e56ec154244cc24967437a7062f65c4db4" }
 dependencies = [
     { name = "apscheduler" },
     { name = "republic" },
@@ -1249,7 +1249,7 @@ dev = [
 requires-dist = [
     { name = "bub", editable = "../bub" },
     { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?rev=6404ac44022fe28a62147451dbab6f6eac595f4e" },
-    { name = "bub-schedule", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&rev=e7b3a1e" },
+    { name = "bub-schedule", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&rev=main" },
     { name = "bub-web-search", editable = "../bub-contrib/packages/bub-web-search" },
 ]
 

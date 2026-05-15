@@ -8,7 +8,7 @@ dependencies = [
     "bub",
     "bub-im-bridge @ git+https://github.com/iodone/bub-im-bridge.git@6404ac44022fe28a62147451dbab6f6eac595f4e",
     "bub-web-search",
-    "bub-schedule @ git+https://github.com/bubbuild/bub-contrib.git@e7b3a1e#subdirectory=packages/bub-schedule",
+    "bub-schedule @ git+https://github.com/bubbuild/bub-contrib.git@main#subdirectory=packages/bub-schedule",
 ]
 
 [tool.uv.sources]
