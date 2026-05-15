@@ -304,7 +304,7 @@ dev = [
 [[package]]
 name = "bub-im-bridge"
 version = "0.6.1"
-source = { git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.6.1#0fedb3f0b632560fca6f68b07e02c04a7126cc9b" }
+source = { git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.6.1#6404ac44022fe28a62147451dbab6f6eac595f4e" }
 dependencies = [
     { name = "bub" },
     { name = "lark-oapi" },
