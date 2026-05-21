@@ -43,19 +43,60 @@ def test_wiki_init(tmp_path: Path):
     result = runner.invoke(main, ["wiki", "init", target])
     assert result.exit_code == 0
     assert "Initialized" in result.output
+    # Wiki
     assert (tmp_path / "my-wiki" / "wiki" / "pages").is_dir()
     assert (tmp_path / "my-wiki" / ".llm-wiki" / "config.toml").exists()
     assert (tmp_path / "my-wiki" / "wiki" / "wiki-purpose.md").exists()
+    # Contexts
+    assert (tmp_path / "my-wiki" / "contexts").is_dir()
+    assert (tmp_path / "my-wiki" / "contexts" / "clippings").is_dir()
+    assert (tmp_path / "my-wiki" / "contexts" / "survey_sessions").is_dir()
+    # Rules
+    assert (tmp_path / "my-wiki" / "rules" / "SOUL.md").exists()
+    assert (tmp_path / "my-wiki" / "rules" / "WORKSPACE.md").exists()
+    # Workspace files
+    assert (tmp_path / "my-wiki" / "AGENTS.md").exists()
+    assert (tmp_path / "my-wiki" / "README.md").exists()
 
 
-def test_wiki_init_rejects_existing_vault(tmp_path: Path):
-    """Test that init fails inside an existing vault."""
+def test_wiki_init_rerun_skips_existing(tmp_path: Path):
+    """Test that re-running init skips existing files."""
     runner = CliRunner()
     target = str(tmp_path / "my-wiki")
+
+    # First run
     runner.invoke(main, ["wiki", "init", target])
+
+    # Modify a file
+    soul_path = tmp_path / "my-wiki" / "rules" / "SOUL.md"
+    original_content = soul_path.read_text(encoding="utf-8")
+    soul_path.write_text("Custom SOUL content", encoding="utf-8")
+
+    # Second run — should skip existing
     result = runner.invoke(main, ["wiki", "init", target])
-    assert result.exit_code != 0
-    assert "already inside" in result.output
+    assert result.exit_code == 0
+    assert "Skipped" in result.output
+    # File should NOT be overwritten
+    assert soul_path.read_text(encoding="utf-8") == "Custom SOUL content"
+
+
+def test_wiki_init_force_overwrites(tmp_path: Path):
+    """Test that --force overwrites existing files."""
+    runner = CliRunner()
+    target = str(tmp_path / "my-wiki")
+
+    # First run
+    runner.invoke(main, ["wiki", "init", target])
+
+    # Modify a file
+    soul_path = tmp_path / "my-wiki" / "rules" / "SOUL.md"
+    soul_path.write_text("Custom SOUL content", encoding="utf-8")
+
+    # Second run with --force
+    result = runner.invoke(main, ["wiki", "init", "--force", target])
+    assert result.exit_code == 0
+    # File should be overwritten with template
+    assert soul_path.read_text(encoding="utf-8") != "Custom SOUL content"
 
 
 def test_wiki_search_outside_vault(tmp_path: Path):
@@ -128,6 +169,7 @@ def test_wiki_status(tmp_path: Path):
     assert result.exit_code == 0
     assert "Wiki:" in result.output
     assert "Pages:" in result.output
+    assert "Contexts:" in result.output
 
 
 def test_wiki_graph_empty(tmp_path: Path):
@@ -340,6 +382,7 @@ def test_wiki_sync_with_db9(tmp_path: Path):
     assert "DB9 sync complete" in result.output
     # Should have attempted to upsert the wiki page
     assert any("INSERT INTO wiki_index" in str(c) for c in mock_cursor.execute.call_args_list)
+    assert any("wiki_page_contexts" in str(c) for c in mock_cursor.execute.call_args_list)
 
 
 def test_wiki_sync_db9_dry_run_no_upsert(tmp_path: Path):

@@ -54,7 +54,7 @@ def sample_page():
         title="Test Page",
         description="A test page for unit testing",
         tags=["test", "example"],
-        sources=["sources/test.txt"],
+        contexts=["contexts/test.txt"],
         content="This is the test content.",
         wikilinks=["other-page"],
         mtime=1234567890.0,
@@ -105,7 +105,7 @@ class TestDB9Schema:
         assert cursor.execute.call_count == 3
         calls = [str(c) for c in cursor.execute.call_args_list]
         assert any("wiki_index" in c for c in calls)
-        assert any("wiki_page_sources" in c for c in calls)
+        assert any("wiki_page_contexts" in c for c in calls)
         assert any("idx_wiki_embedding" in c for c in calls)
 
 
@@ -122,7 +122,7 @@ class TestDB9PageCRUD:
         client.upsert_page(sample_page, "abc123hash")
 
         cursor = mock_psycopg2["cursor"]
-        # Should execute: INSERT/ON CONFLICT, DELETE old sources, INSERT new source
+        # Should execute: INSERT/ON CONFLICT, DELETE old contexts, INSERT new context
         assert cursor.execute.call_count >= 3
 
         # Check the main upsert call
@@ -140,8 +140,8 @@ class TestDB9PageCRUD:
 
         cursor = mock_psycopg2["cursor"]
         assert cursor.execute.call_count == 2
-        # First call: DELETE from wiki_page_sources
-        assert "wiki_page_sources" in str(cursor.execute.call_args_list[0])
+        # First call: DELETE from wiki_page_contexts
+        assert "wiki_page_contexts" in str(cursor.execute.call_args_list[0])
         # Second call: DELETE from wiki_index
         assert "wiki_index" in str(cursor.execute.call_args_list[1])
 
@@ -219,7 +219,7 @@ class TestDB9HashManagement:
 
         assert hashes == {"page-a": "hash_a", "page-b": "hash_b"}
 
-    def test_pages_by_source(self, mock_psycopg2, db9_config):
+    def test_pages_by_context(self, mock_psycopg2, db9_config):
         from philip.wiki.db9 import create_db9_client
 
         mock_psycopg2["cursor"].fetchall.return_value = [
@@ -228,7 +228,7 @@ class TestDB9HashManagement:
         ]
 
         client = create_db9_client(db9_config)
-        slugs = client.pages_by_source("sources/test.txt")
+        slugs = client.pages_by_context("contexts/test.txt")
 
         assert slugs == ["page-1", "page-2"]
 

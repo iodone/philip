@@ -81,17 +81,17 @@ class DB9Client:
                 description TEXT,
                 content TEXT NOT NULL,
                 tags TEXT[] DEFAULT '{}',
-                sources TEXT[] DEFAULT '{}',
+                contexts TEXT[] DEFAULT '{}',
                 content_hash TEXT NOT NULL,
                 updated TEXT,
                 embedding VECTOR(1024)
             )
         """)
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS wiki_page_sources (
+            CREATE TABLE IF NOT EXISTS wiki_page_contexts (
                 slug TEXT NOT NULL,
-                source_path TEXT NOT NULL,
-                PRIMARY KEY (slug, source_path)
+                context_path TEXT NOT NULL,
+                PRIMARY KEY (slug, context_path)
             )
         """)
         cur.execute("""
@@ -113,14 +113,14 @@ class DB9Client:
 
         cur.execute(
             """
-            INSERT INTO wiki_index (slug, title, description, content, tags, sources, content_hash, updated, embedding)
+            INSERT INTO wiki_index (slug, title, description, content, tags, contexts, content_hash, updated, embedding)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, embedding(%s)::vector(1024))
             ON CONFLICT (slug) DO UPDATE SET
                 title = EXCLUDED.title,
                 description = EXCLUDED.description,
                 content = EXCLUDED.content,
                 tags = EXCLUDED.tags,
-                sources = EXCLUDED.sources,
+                contexts = EXCLUDED.contexts,
                 content_hash = EXCLUDED.content_hash,
                 updated = EXCLUDED.updated,
                 embedding = EXCLUDED.embedding
@@ -131,28 +131,28 @@ class DB9Client:
                 page.description or "",
                 page.content,
                 page.tags,
-                page.sources,
+                page.contexts,
                 content_hash,
                 page.updated or "",
                 embedding_text,
             ],
         )
 
-        # Rebuild source mappings
-        cur.execute("DELETE FROM wiki_page_sources WHERE slug = %s", (page.slug,))
-        for source in page.sources:
+        # Rebuild context mappings
+        cur.execute("DELETE FROM wiki_page_contexts WHERE slug = %s", (page.slug,))
+        for ctx in page.contexts:
             cur.execute(
-                "INSERT INTO wiki_page_sources (slug, source_path) VALUES (%s, %s) ON CONFLICT DO NOTHING",
-                (page.slug, source),
+                "INSERT INTO wiki_page_contexts (slug, context_path) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                (page.slug, ctx),
             )
         conn.commit()
         cur.close()
 
     def delete_page(self, slug: str) -> None:
-        """Remove a wiki page and its source mappings from the index."""
+        """Remove a wiki page and its context mappings from the index."""
         conn = self._get_conn()
         cur = conn.cursor()
-        cur.execute("DELETE FROM wiki_page_sources WHERE slug = %s", (slug,))
+        cur.execute("DELETE FROM wiki_page_contexts WHERE slug = %s", (slug,))
         cur.execute("DELETE FROM wiki_index WHERE slug = %s", (slug,))
         conn.commit()
         cur.close()
@@ -205,13 +205,13 @@ class DB9Client:
         cur.close()
         return {row[0]: row[1] for row in rows}
 
-    def pages_by_source(self, source_path: str) -> list[str]:
-        """Get all page slugs that reference a given source path."""
+    def pages_by_context(self, context_path: str) -> list[str]:
+        """Get all page slugs that reference a given context path."""
         conn = self._get_conn()
         cur = conn.cursor()
         cur.execute(
-            "SELECT slug FROM wiki_page_sources WHERE source_path = %s",
-            (source_path,),
+            "SELECT slug FROM wiki_page_contexts WHERE context_path = %s",
+            (context_path,),
         )
         rows = cur.fetchall()
         cur.close()

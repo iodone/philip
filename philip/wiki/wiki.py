@@ -37,7 +37,7 @@ class WikiPage:
     title: str
     description: str | None = None
     tags: list[str] = field(default_factory=list)
-    sources: list[str] = field(default_factory=list)
+    contexts: list[str] = field(default_factory=list)
     created: str | None = None
     updated: str | None = None
     aliases: list[str] = field(default_factory=list)
@@ -98,9 +98,14 @@ def parse_wiki_page(file_path: str | Path, wiki_dir: str | Path) -> WikiPage:
     tags = meta.get("tags", [])
     if not isinstance(tags, list):
         tags = []
-    sources = meta.get("sources", [])
-    if not isinstance(sources, list):
-        sources = []
+    # Support both "contexts" (new) and "sources" (legacy) frontmatter keys
+    contexts = meta.get("contexts", [])
+    if not isinstance(contexts, list):
+        contexts = []
+    if not contexts:
+        sources = meta.get("sources", [])
+        if isinstance(sources, list):
+            contexts = sources
     aliases = meta.get("aliases", [])
     if not isinstance(aliases, list):
         aliases = []
@@ -112,7 +117,7 @@ def parse_wiki_page(file_path: str | Path, wiki_dir: str | Path) -> WikiPage:
         title=str(meta.get("title", file_path.stem)),
         description=meta.get("description"),
         tags=tags,
-        sources=sources,
+        contexts=contexts,
         created=meta.get("created"),
         updated=meta.get("updated"),
         aliases=aliases,

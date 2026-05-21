@@ -18,8 +18,8 @@ def vault(tmp_path: Path) -> Path:
     """Create a minimal wiki vault structure for testing."""
     wiki_pages = tmp_path / "wiki" / "pages"
     wiki_pages.mkdir(parents=True)
-    sources = tmp_path / "sources"
-    sources.mkdir()
+    contexts = tmp_path / "contexts"
+    contexts.mkdir()
     llm_wiki_dir = tmp_path / ".llm-wiki"
     llm_wiki_dir.mkdir()
 
@@ -137,7 +137,7 @@ class TestConfig:
 
         assert paths.wiki == vault / "wiki" / "pages"
         assert paths.wiki_root == vault / "wiki"
-        assert paths.sources == vault / "sources"
+        assert paths.contexts == vault / "contexts"
         assert paths.purpose == vault / "wiki" / "wiki-purpose.md"
         assert paths.sync_state == vault / ".llm-wiki" / "sync-state.json"
 
@@ -147,7 +147,7 @@ class TestConfig:
         config = WikiConfig(vault=VaultSection(source_dir="raw", wiki_dir="docs", pages_subdir=""))
         paths = vault_paths(tmp_path, config)
 
-        assert paths.sources == tmp_path / "raw"
+        assert paths.contexts == tmp_path / "raw"
         assert paths.wiki == tmp_path / "docs"
         assert paths.wiki_root == tmp_path / "docs"
 

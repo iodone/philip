@@ -8,9 +8,16 @@ import click
 
 from philip.wiki.config import (
     TEMPLATE_AGENT,
+    TEMPLATE_AGENTS_MD,
     TEMPLATE_CONFIG,
     TEMPLATE_LOG,
     TEMPLATE_PURPOSE,
+    TEMPLATE_README_MD,
+    TEMPLATE_RULES_COMMUNICATION,
+    TEMPLATE_RULES_SECURITY,
+    TEMPLATE_RULES_SOUL,
+    TEMPLATE_RULES_USER,
+    TEMPLATE_RULES_WORKSPACE,
     TEMPLATE_SCHEMA,
     VaultSection,
     WikiConfig,
@@ -38,53 +45,86 @@ def wiki() -> None:
 
 @wiki.command()
 @click.argument("directory", default=".")
-def init(directory: str) -> None:
-    """Initialize a new wiki vault."""
-    target = Path(directory).resolve()
+@click.option("--force", is_flag=True, help="Overwrite existing files.")
+def init(directory: str, force: bool) -> None:
+    """Initialize a new wiki workspace.
 
-    if find_vault_root(target):
-        click.echo("Error: This directory is already inside an llm-wiki vault.", err=True)
-        raise SystemExit(1)
+    Creates the full workspace structure including wiki vault, rules,
+    contexts, and agent skills. Existing files are skipped unless
+    --force is used to overwrite. Safe to run multiple times —
+    each run fills in missing pieces.
+    """
+    target = Path(directory).resolve()
 
     default_config = WikiConfig(
         vault=VaultSection(name="My Wiki", language="en", wiki_dir="wiki", pages_subdir="pages")
     )
     paths = vault_paths(target, default_config)
 
-    paths.wiki.mkdir(parents=True, exist_ok=True)
-    paths.wiki_root.mkdir(parents=True, exist_ok=True)
-    paths.sources.mkdir(parents=True, exist_ok=True)
-    paths.llm_wiki_dir.mkdir(parents=True, exist_ok=True)
+    # --- Create directories ---
+    dirs_to_create = [
+        paths.wiki,             # wiki/pages/
+        paths.contexts,         # contexts/
+        paths.contexts / "blog",
+        paths.contexts / "clippings",
+        paths.contexts / "daily_records",
+        paths.contexts / "life_record",
+        paths.contexts / "survey_sessions",
+        paths.contexts / "thought_review",
+        paths.rules_dir,        # rules/
+        paths.rules_dir / "axioms",
+        paths.rules_dir / "skills",
+        paths.agents_skills_dir,  # .agents/skills/
+        paths.llm_wiki_dir,     # .llm-wiki/
+    ]
+    for d in dirs_to_create:
+        d.mkdir(parents=True, exist_ok=True)
 
+    # --- Create files ---
     files_to_create = [
+        # Wiki templates
         (paths.purpose, TEMPLATE_PURPOSE),
         (paths.schema, TEMPLATE_SCHEMA),
         (paths.agent, TEMPLATE_AGENT),
         (paths.config, TEMPLATE_CONFIG),
         (paths.log, TEMPLATE_LOG),
+        # Workspace-level files
+        (target / "AGENTS.md", TEMPLATE_AGENTS_MD),
+        (target / "README.md", TEMPLATE_README_MD),
+        # Rules stubs
+        (paths.rules_dir / "SOUL.md", TEMPLATE_RULES_SOUL),
+        (paths.rules_dir / "USER.md", TEMPLATE_RULES_USER),
+        (paths.rules_dir / "COMMUNICATION.md", TEMPLATE_RULES_COMMUNICATION),
+        (paths.rules_dir / "SECURITY.md", TEMPLATE_RULES_SECURITY),
+        (paths.rules_dir / "WORKSPACE.md", TEMPLATE_RULES_WORKSPACE),
     ]
 
+    created_files: list[str] = []
+    skipped_files: list[str] = []
     for path, content in files_to_create:
-        if not path.exists():
+        if not path.exists() or force:
             path.write_text(content, encoding="utf-8")
+            created_files.append(str(path.relative_to(target)))
+        else:
+            skipped_files.append(str(path.relative_to(target)))
 
-    click.echo(f"Initialized llm-wiki vault in {target}")
+    click.echo(f"Initialized wiki workspace in {target}")
     click.echo("")
-    click.echo("Created:")
-    click.echo("  wiki/pages/        — Wiki pages (Obsidian-compatible)")
-    click.echo("  wiki/")
-    click.echo("    wiki-purpose.md  — Purpose and scope")
-    click.echo("    wiki-schema.md   — Page conventions and naming")
-    click.echo("    wiki-agent.md    — Agent behavioral rules")
-    click.echo("    wiki-log.md      — Append-only operation log")
-    click.echo("  sources/           — Raw source documents")
-    click.echo("  .llm-wiki/")
-    click.echo("    config.toml      — Vault configuration")
+    if created_files:
+        click.echo("Created:")
+        for f in created_files:
+            click.echo(f"  {f}")
+    if skipped_files:
+        click.echo("Skipped (already exists):")
+        for f in skipped_files:
+            click.echo(f"  {f}")
     click.echo("")
     click.echo("Next steps:")
     click.echo("  1. Edit wiki/wiki-purpose.md to describe your wiki")
-    click.echo("  2. Add wiki pages to wiki/pages/")
-    click.echo("  3. Use `philip wiki search <query>` to find content")
+    click.echo("  2. Edit rules/SOUL.md to define agent identity")
+    click.echo("  3. Add wiki pages to wiki/pages/")
+    click.echo("  4. Run `philip wiki skill install` to install skills")
+    click.echo("  5. Use `philip wiki search <query>` to find content")
 
 
 # ---------------------------------------------------------------------------
@@ -237,7 +277,7 @@ def status() -> None:
     paths = vault_paths(root, config)
 
     pages = load_wiki_pages(paths.wiki)
-    source_files = list_markdown_files(paths.sources)
+    context_files = list_markdown_files(paths.contexts)
     sync_state = load_sync_state(paths.sync_state)
 
     # Count log entries
@@ -262,9 +302,9 @@ def status() -> None:
     if not paths.schema.exists():
         issues.append("wiki-schema.md missing")
 
-    pages_without_sources = [p for p in pages if not p.sources]
-    if pages_without_sources:
-        issues.append(f"{len(pages_without_sources)} pages without sources")
+    pages_without_contexts = [p for p in pages if not p.contexts]
+    if pages_without_contexts:
+        issues.append(f"{len(pages_without_contexts)} pages without contexts")
 
     # Broken wikilinks
     slug_set = {p.slug.lower() for p in pages}
@@ -283,8 +323,8 @@ def status() -> None:
     click.echo(f"Wiki: {config.vault.name}")
     click.echo(f"Language: {config.vault.language}")
     click.echo("")
-    click.echo(f"Pages:   {len(pages)}")
-    click.echo(f"Sources: {len(source_files)}")
+    click.echo(f"Pages:    {len(pages)}")
+    click.echo(f"Contexts: {len(context_files)}")
     click.echo(f"Links:   {sum(len(p.wikilinks) for p in pages)}")
     click.echo(f"Log:     {log_entries} entries")
     if sync_state.last_sync:
@@ -324,7 +364,7 @@ def sync(dry_run: bool) -> None:
     paths.llm_wiki_dir.mkdir(parents=True, exist_ok=True)
 
     state = load_sync_state(paths.sync_state)
-    result = compute_sync([paths.wiki, paths.sources], root, state)
+    result = compute_sync([paths.wiki, paths.contexts], root, state)
 
     total_changes = len(result.added) + len(result.modified) + len(result.deleted)
 
@@ -351,7 +391,7 @@ def sync(dry_run: bool) -> None:
         click.echo("\n(dry run — state not updated)")
         return
 
-    new_state = update_sync_state([paths.wiki, paths.sources], root, state)
+    new_state = update_sync_state([paths.wiki, paths.contexts], root, state)
     save_sync_state(paths.sync_state, new_state)
     click.echo(f"\nSync state updated ({new_state.last_sync})")
 
