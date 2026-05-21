@@ -53,11 +53,11 @@ DEFAULT_CONFIG = WikiConfig()
 _TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 
 _TEMPLATE_FILE_MAP: dict[str, str] = {
-    "purpose": "purpose.md",
-    "schema": "schema.md",
-    "agent": "agent.md",
+    "purpose": "wiki/wiki-purpose.md",
+    "schema": "wiki/wiki-schema.md",
+    "agent": "wiki/wiki-agent.md",
+    "log": "wiki/wiki-log.md",
     "config": "config.toml",
-    "log": "log.md",
     "agents_md": "AGENTS.md",
     "readme_md": "README.md",
     "rules_soul": "rules/SOUL.md",
