@@ -109,7 +109,7 @@ def init(directory: str, force: bool) -> None:
             skipped_files.append(str(path.relative_to(target)))
 
     # --- Install built-in skills to workspace ---
-    skill_result = install_skills_to(paths.agents_skills_dir)
+    skill_result = install_skills_to(paths.agents_skills_dir, overwrite=force)
     skill_installed = [f".agents/skills/{name}/SKILL.md" for name in skill_result.installed]
     skill_skipped = [f".agents/skills/{name}/SKILL.md" for name in skill_result.skipped]
     if not force:

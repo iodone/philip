@@ -31,14 +31,10 @@ uv sync
 
 ### 1. 初始化 Wiki Workspace
 
-在启动 agent 之前，先使用 `philip wiki init` 初始化一个 workspace。这个步骤创建 wiki 目录结构、模板文件，并将内置 skill 安装到 `.agents/skills/`：
+在启动 agent 之前，先使用 `philip wiki init` 初始化一个 workspace。这个命令创建完整目录结构、模板文件，并自动将内置 skill 安装到 `.agents/skills/`：
 
 ```bash
-# 选择一个 workspace 目录并初始化
 philip wiki init /path/to/workspace
-
-# 安装内置 skill 到 workspace
-philip wiki skill install --dir /path/to/workspace
 ```
 
 初始化后的 workspace 结构：

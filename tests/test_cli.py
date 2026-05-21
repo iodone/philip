@@ -57,6 +57,9 @@ def test_wiki_init(tmp_path: Path):
     # Workspace files
     assert (tmp_path / "my-wiki" / "AGENTS.md").exists()
     assert (tmp_path / "my-wiki" / "README.md").exists()
+    # Skills auto-installed
+    assert (tmp_path / "my-wiki" / ".agents" / "skills" / "llm-wiki" / "SKILL.md").exists()
+    assert "skill" in result.output.lower() or "SKILL.md" in result.output
 
 
 def test_wiki_init_rerun_skips_existing(tmp_path: Path):
@@ -78,6 +81,26 @@ def test_wiki_init_rerun_skips_existing(tmp_path: Path):
     assert "Skipped" in result.output
     # File should NOT be overwritten
     assert soul_path.read_text(encoding="utf-8") == "Custom SOUL content"
+
+
+def test_wiki_init_skill_skip(tmp_path: Path):
+    """Test that re-running init skips existing skill files."""
+    runner = CliRunner()
+    target = str(tmp_path / "my-wiki")
+
+    # First run installs skill
+    runner.invoke(main, ["wiki", "init", target])
+    skill_path = tmp_path / "my-wiki" / ".agents" / "skills" / "llm-wiki" / "SKILL.md"
+    assert skill_path.exists()
+    skill_path.write_text("Custom skill content", encoding="utf-8")
+
+    # Second run without --force should NOT overwrite skill
+    runner.invoke(main, ["wiki", "init", target])
+    assert skill_path.read_text(encoding="utf-8") == "Custom skill content"
+
+    # Third run with --force should overwrite skill
+    runner.invoke(main, ["wiki", "init", "--force", target])
+    assert skill_path.read_text(encoding="utf-8") != "Custom skill content"
 
 
 def test_wiki_init_force_overwrites(tmp_path: Path):
