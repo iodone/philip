@@ -118,7 +118,7 @@ def search(query: str, limit: int, bm25_only: bool) -> None:
 
     if not bm25_only and config.db9 and config.db9.url:
         try:
-            from philip.wiki.db9 import create_db9_client  # type: ignore[import-untyped]
+            from philip.wiki.db9 import create_db9_client
 
             db9 = create_db9_client(config)
             if db9:
@@ -354,6 +354,44 @@ def sync(dry_run: bool) -> None:
     new_state = update_sync_state([paths.wiki, paths.sources], root, state)
     save_sync_state(paths.sync_state, new_state)
     click.echo(f"\nSync state updated ({new_state.last_sync})")
+
+    # Sync to DB9 if configured
+    if config.db9 and config.db9.url:
+        from philip.wiki.db9 import create_db9_client
+        from philip.wiki.sync import content_hash as compute_hash
+        from philip.wiki.wiki import parse_wiki_page
+
+        db9 = create_db9_client(config)
+        if db9:
+            click.echo("\nSyncing to DB9...")
+            try:
+                db9.ensure_schema()
+
+                # Upsert added/modified wiki pages
+                wiki_changes = [
+                    f for f in (result.added + result.modified)
+                    if f.startswith("wiki/")
+                ]
+                for rel in wiki_changes:
+                    file_path = root / rel
+                    page = parse_wiki_page(file_path, paths.wiki)
+                    h = compute_hash(file_path)
+                    db9.upsert_page(page, h)
+                    click.echo(f"  ↑ {rel}")
+
+                # Delete removed wiki pages
+                wiki_deleted = [f for f in result.deleted if f.startswith("wiki/")]
+                for rel in wiki_deleted:
+                    slug = rel.removeprefix("wiki/").removesuffix(".md")
+                    db9.delete_page(slug)
+                    click.echo(f"  ✕ {rel}")
+
+                synced_count = len(wiki_changes) + len(wiki_deleted)
+                click.echo(f"DB9 sync complete ({synced_count} pages)")
+            except Exception as err:
+                click.echo(f"DB9 sync failed: {err}", err=True)
+            finally:
+                db9.close()
 
 
 # ---------------------------------------------------------------------------
