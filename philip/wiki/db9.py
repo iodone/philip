@@ -26,7 +26,7 @@ def _load_psycopg2() -> Any:
     except ModuleNotFoundError:
         raise RuntimeError(
             "psycopg2 is required for DB9 integration. "
-            "Install it with: pip install psycopg2-binary"
+            "Install it with: pip install philip[db9]"
         ) from None
 
 
