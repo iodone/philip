@@ -45,7 +45,7 @@ philip = "philip.plugins.plugin:PhilipPlugin"
 
 [tool.hatch.build.targets.wheel.force-include]
 "philip/skills" = "philip/skills"
-"philip/wiki/templates" = "philip/wiki/templates"
+"philip/wiki/template" = "philip/wiki/template"
 
 [tool.hatch.metadata]
 allow-direct-references = true

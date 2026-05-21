@@ -50,7 +50,7 @@ CONFIG_PATH = ".llm-wiki/config.toml"
 
 DEFAULT_CONFIG = WikiConfig()
 
-_TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
+_TEMPLATES_DIR = Path(__file__).resolve().parent / "template"
 
 _TEMPLATE_FILE_MAP: dict[str, str] = {
     "purpose": "wiki/wiki-purpose.md",
