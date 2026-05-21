@@ -29,9 +29,40 @@ uv sync
 
 ## 快速开始
 
+### 1. 初始化 Wiki Workspace
+
+在启动 agent 之前，先使用 `philip wiki init` 初始化一个 workspace。这个步骤创建 wiki 目录结构、模板文件，并将内置 skill 安装到 `.agents/skills/`：
+
+```bash
+# 选择一个 workspace 目录并初始化
+philip wiki init /path/to/workspace
+
+# 安装内置 skill 到 workspace
+philip wiki skill install --dir /path/to/workspace
+```
+
+初始化后的 workspace 结构：
+
+```
+/path/to/workspace/
+├── wiki/
+│   ├── pages/             # Wiki 页面（Obsidian 兼容）
+│   ├── wiki-purpose.md    # Wiki 目的与范围
+│   ├── wiki-schema.md     # 页面规范
+│   ├── wiki-agent.md      # Agent 行为规则
+│   └── wiki-log.md        # 操作日志
+├── sources/               # 原始源文档
+├── .llm-wiki/
+│   └── config.toml        # Vault 配置
+└── .agents/skills/
+    └── llm-wiki/SKILL.md  # 内置 wiki 操作 skill
+```
+
+### 2. 配置并启动 Agent
+
 ```bash
 cp .env.example .env
-# 编辑 .env，填入 BUB_MODEL、BUB_API_KEY、BUB_WORKSPACE
+# 编辑 .env，填入 BUB_MODEL、BUB_API_KEY、BUB_WORKSPACE（指向上面的 workspace）
 
 # 宿主机模式（开发调试）
 ./run-host.sh
@@ -39,6 +70,8 @@ cp .env.example .env
 # 或 Docker 模式（生产部署）
 docker-compose up -d
 ```
+
+启动后，agent 会自动读取 workspace 中的 wiki skill，通过 `philip wiki search/graph/sync` 等命令管理知识库。
 
 ## 部署模式
 

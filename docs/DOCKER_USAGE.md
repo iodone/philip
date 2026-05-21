@@ -12,13 +12,29 @@ cp .env.example .env
 
 编辑 `.env` 文件，**必需**修改 `BUB_WORKSPACE` 为你的实际工作空间路径。
 
-### 2. 创建必要目录
+### 2. 初始化 Wiki Workspace
+
+在启动容器之前，先初始化 agent 的工作空间：
+
+```bash
+# 初始化 workspace（创建 wiki 目录结构、模板文件）
+philip wiki init /path/to/workspace
+
+# 安装内置 skill 到 workspace
+philip wiki skill install --dir /path/to/workspace
+```
+
+> `/path/to/workspace` 应与 `.env` 中的 `BUB_WORKSPACE` 一致。
+
+初始化后的 workspace 包含 wiki 知识库目录、配置模板和 agent skill 文件。
+
+### 3. 创建必要目录
 
 ```bash
 mkdir -p ~/.bub ~/.agents/skills ~/work/boxsh/philip
 ```
 
-### 3. 微信渠道登录（可选）
+### 4. 微信渠道登录（可选）
 
 如果使用微信渠道，需要先在本地登录：
 
@@ -26,13 +42,13 @@ mkdir -p ~/.bub ~/.agents/skills ~/work/boxsh/philip
 uv run -m bub_im_bridge login
 ```
 
-### 4. 启动容器
+### 5. 启动容器
 
 ```bash
 docker-compose up -d
 ```
 
-### 5. 查看日志
+### 6. 查看日志
 
 ```bash
 docker-compose logs -f
