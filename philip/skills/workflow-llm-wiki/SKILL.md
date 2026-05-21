@@ -1,5 +1,5 @@
 ---
-name: llm-wiki
+name: workflow-llm-wiki
 version: 2.0.0
 description: |
   LLM Wiki vault 操作手册。
@@ -13,8 +13,8 @@ description: |
 
 # LLM Wiki
 
-**HARD GATE：** 本 skill 只操作 wiki vault（`wiki/` 和 `.llm-wiki/`）。
-- **不修改** `sources/` 下的任何文件（immutable raw inputs）
+**HARD GATE：** 本 skill 只操作 wiki vault（`wiki/` 和 `.llm-wiki/`），以及与本次 wiki 操作直接相关的 `contexts/` 输入材料。
+- **不修改** 与当前 wiki 操作无关的 `contexts/` 文件
 - **不执行** 与 wiki 无关的 shell 命令
 - **不暴露** API key、token、配置中的敏感信息
 
@@ -22,10 +22,12 @@ description: |
 
 ## Operations
 
-- **`/ingest <path>`** — 摄取源文件为 wiki 页面
+- **`/ingest <path>`** — 摄取 `contexts/` 下的材料为 wiki 页面
 - **`/query <question>`** — 搜索 wiki 并合成答案
 - **`/lint`** — 健康检查：断链、孤岛、矛盾、过时
-- **`/research <topic>`** — 联网研究 → 保存源 → ingest
+- **`/research <topic>`** — 联网调研 → 产出 `contexts/survey_sessions/` + ingest
+
+---
 
 ## CLI
 
@@ -33,7 +35,7 @@ Wiki vault 的底层操作通过 `philip` CLI 触发：
 
 | 命令 | 说明 |
 |---|---|
-| `philip wiki init [dir]` | 初始化 wiki vault |
+| `philip wiki init [dir]` | 初始化 wiki workspace |
 | `philip wiki search <query>` | BM25 + vector 搜索 |
 | `philip wiki sync` | 更新搜索索引和同步状态 |
 | `philip wiki status` | vault 统计和健康摘要 |
@@ -49,7 +51,7 @@ Before any operation, read these files from `wiki/`:
 2. `wiki/wiki-schema.md` — 命名规范、frontmatter 规则
 3. `wiki/wiki-agent.md` — Agent 行为规则（单一源，无 CLAUDE.md/AGENTS.md fallback）
 
-Never modify anything under `sources/`. Those files are immutable raw inputs; edits belong in `wiki/`.
+`contexts/` 是 wiki 的输入层：`contexts/clippings/`、`contexts/survey_sessions/`、`contexts/thought_review/`、`contexts/daily_records/` 都可以作为 ingest 输入。编辑主要发生在 `wiki/`；只有在需要写入 ingest 元数据或研究产物时才回写对应的 `contexts/` 文件。
 
 After **every** operation — ingest, query, lint, research — append a one-line entry to `wiki/wiki-log.md` and run `philip wiki sync`. Do not skip either step.
 
@@ -60,7 +62,7 @@ After **every** operation — ingest, query, lint, research — append a one-lin
 | 操作 | 人工 | Agent | 压缩比 |
 |:---|:---|:---|:---|
 | `/ingest` (单文件) | ~30min | ~5min | ~6x |
-| `/ingest` (10页源) | ~2h | ~15min | ~8x |
+| `/ingest` (10页上下文材料) | ~2h | ~15min | ~8x |
 | `/query` | ~30min | ~2min | ~15x |
 | `/lint` | ~1h | ~5min | ~12x |
 | `/research` | ~4h | ~30min | ~8x |
@@ -69,21 +71,21 @@ After **every** operation — ingest, query, lint, research — append a one-lin
 
 ## /ingest <path>
 
-Process new source material into the wiki.
+Process new context material into the wiki.
 
 ### Phase 0: Pre-check
 
-1. **Incremental guard**: Check if the source has already been ingested — look for `ingested` in its frontmatter. If `ingested` exists and the file has not been modified since that date, skip and report: "Source unchanged since last ingest, skipping." If modified, proceed (this is a re-ingest).
+1. **Incremental guard**: Check if the context document has already been ingested — look for `ingested` in its frontmatter. If `ingested` exists and the file has not been modified since that date, skip and report: "Context unchanged since last ingest, skipping." If modified, proceed (this is a re-ingest).
 
 2. Read `wiki/wiki-purpose.md`, `wiki/wiki-schema.md`, and `wiki/wiki-agent.md` to understand scope, naming, and ingest criteria.
 
-3. **Ingest filter**: Evaluate the source against the MUST / MAY / NEVER criteria from `wiki-agent.md`.
+3. **Ingest filter**: Evaluate the context document against the MUST / MAY / NEVER criteria from `wiki-agent.md`.
 
-**STOP.** If filtered out → report "Source filtered: [reason]" → DONE.
+**STOP.** If filtered out → report "Context filtered: [reason]" → DONE.
 
 ### Phase 1: Analyze & Plan
 
-4. Read the source material.
+4. Read the context material.
 
 5. Decide whether this ingest needs discussion:
    - Wiki has clear structure + small addition → proceed directly (**跳到 Phase 2**）
@@ -98,7 +100,7 @@ Process new source material into the wiki.
 
 6. Run `philip wiki search` or scan `wiki/` to see existing wiki pages.
 
-7. Analyze the source content and decide:
+7. Analyze the context content and decide:
    - Which new wiki pages to create
    - Which existing pages to update
    - What `[[wikilinks]]` to add
@@ -109,17 +111,17 @@ Process new source material into the wiki.
    title: Page Title
    description: One-line summary
    tags: []
-   sources: [path-to-source.md]
+   contexts: [path-to-context.md]
    created: YYYY-MM-DD
    updated: YYYY-MM-DD
    ---
    ```
 
-   GOOD: 每个页面聚焦单一主题，sources 字段指向原始文件
+   GOOD: 每个页面聚焦单一主题，`contexts` 字段指向输入材料
    BAD:  一个页面塞 3 个不相关主题（模型会创建"大杂烩"页面）
-   BAD:  sources 字段留空（违反溯源原则）
+   BAD:  `contexts` 字段留空（违反溯源原则）
 
-9. Add frontmatter to the source document:
+9. Add frontmatter to the context document:
    ```yaml
    ---
    ingested: YYYY-MM-DD
@@ -131,7 +133,7 @@ Process new source material into the wiki.
 
 10. Append entry to `wiki/wiki-log.md`:
     ```
-    YYYY-MM-DD HH:MM | ingest | <source-title> → N pages: page-1, page-2, ...
+    YYYY-MM-DD HH:MM | ingest | <context-title> → N pages: page-1, page-2, ...
     ```
 
 11. Run `philip wiki sync`.
@@ -139,7 +141,7 @@ Process new source material into the wiki.
 12. Report to user:
     ```
     DONE
-    Source: <path>
+    Context: <path>
     Pages created: N
     Pages updated: N
     Wikilinks: N
@@ -231,7 +233,7 @@ Variants: `/lint <page>` — Lint a specific page. `/lint --fix` — Auto-fix sa
 
 ### Phase 1: Scan & Classify
 
-2. Scan all pages in `wiki/` and all files in `sources/`.
+2. Scan all pages in `wiki/` and the relevant files in `contexts/`.
 
 3. Build link graph — extract all `[[wikilinks]]`.
 
@@ -240,23 +242,23 @@ Variants: `/lint <page>` — Lint a specific page. `/lint --fix` — Auto-fix sa
 **Structural Issues:**
 - **Broken links**: `[[wikilinks]]` → non-existent pages
 - **Orphan pages**: no incoming links
-- **Missing frontmatter**: required fields (title, description, tags, sources, updated)
+- **Missing frontmatter**: required fields (title, description, tags, contexts, updated)
 - **Naming violations**: not following `wiki-schema.md`
 
 **Content Issues:**
 - **Contradictions**: conflicting claims across pages
-- **Stale content**: `updated` older than source modification dates
-- **Unsourced claims**: empty `sources` in frontmatter
+- **Stale content**: `updated` older than context modification dates
+- **Unlinked claims**: empty `contexts` in frontmatter
 
-**Source Issues:**
-- **Uningested sources**: files in `sources/` without `ingested` frontmatter
+**Context Issues:**
+- **Uningested context docs**: files in `contexts/` without `ingested` frontmatter
 
 ### Phase 2: Report
 
 5. Present structured report:
    ```
    ## Lint Report — YYYY-MM-DD
-   Total pages: N | Sources: N
+   Total pages: N | Context docs: N
    Issues: critical: X, warning: Y, info: Z
 
    Critical:
@@ -282,7 +284,7 @@ Variants: `/lint <page>` — Lint a specific page. `/lint --fix` — Auto-fix sa
 | Broken link | Remove link or create stub page |
 | Missing frontmatter | Add required fields |
 | Orphan page | Add links from related pages |
-| Stale content | Re-read source, update page |
+| Stale content | Re-read context doc, update page |
 | Duplicate topics | Merge pages, add alias |
 
 7. **Never auto-fix contradictions** — report for human review.
@@ -306,7 +308,7 @@ Variants: `/lint <page>` — Lint a specific page. `/lint --fix` — Auto-fix sa
 
 ## /research <topic>
 
-Deep-dive investigation beyond existing wiki content.
+Deep-dive investigation beyond existing wiki content. 虽然命令名保留为 `/research`，但产出层一律使用 `survey_sessions` 语义，而不是旧的 `research/` 目录。
 
 ### Phase 0: Query First
 
@@ -316,16 +318,16 @@ Deep-dive investigation beyond existing wiki content.
 
 **STOP。** If wiki already has comprehensive coverage → report findings → DONE.
 
-### Phase 1: Gather Sources
+### Phase 1: Gather Context Materials
 
 3. Define research question and scope.
 
-4. Search for external sources (limit **5–10 sources** per session).
+4. Search for external materials (limit **5–10 items** per session).
 
-5. For each source, save to `sources/` with frontmatter:
+5. For each external material, save the raw clipping to `contexts/clippings/` with frontmatter:
    ```yaml
    ---
-   title: Source Title
+   title: Context Title
    url: https://original-url
    author: Author Name
    date: YYYY-MM-DD
@@ -334,13 +336,15 @@ Deep-dive investigation beyond existing wiki content.
    ---
    ```
 
+   `contexts/clippings/` 只保存外部收藏过来的原始材料，不承载整理后的调研结论。
+
 ### Phase 2: Ingest & Synthesize
 
-6. For each new source, run the **Ingest** procedure (Phase 0-3).
+6. For each new context material, run the **Ingest** procedure (Phase 0-3).
 
-7. After all sources ingested, write research report:
+7. After all context materials are ingested, write the survey session to `contexts/survey_sessions/`:
    ```
-   ## Research Report: [Topic]
+   ## Survey Session: [Topic]
 
    ### Question
    [Original research question]
@@ -348,8 +352,8 @@ Deep-dive investigation beyond existing wiki content.
    ### Findings
    [Synthesized answer]
 
-   ### Sources Added
-   - sources/path.md — what it contributed
+   ### Context Materials Added
+   - contexts/clippings/path.md — what it contributed
 
    ### Wiki Pages Created/Updated
    - [[page-1]] — what was added
@@ -367,7 +371,7 @@ Deep-dive investigation beyond existing wiki content.
 10. Report:
     ```
     DONE
-    Sources added: N
+    Context materials added: N
     Pages created: N
     Pages updated: N
     Gaps: [list]
@@ -375,8 +379,8 @@ Deep-dive investigation beyond existing wiki content.
 
 ### Self-Regulation
 
-- 如果 research 超过 10 个源 → **STOP**，向用户确认是否继续
-- 如果连续 3 个源都没有产生新页面 → **STOP**，报告"信息密度低，建议缩小范围"
+- 如果本次调研超过 10 个材料 → **STOP**，向用户确认是否继续
+- 如果连续 3 个材料都没有产生新页面 → **STOP**，报告"信息密度低，建议缩小范围"
 
 ---
 

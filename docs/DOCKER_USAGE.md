@@ -14,19 +14,13 @@ cp .env.example .env
 
 ### 2. 初始化 Wiki Workspace
 
-在启动容器之前，先初始化 agent 的工作空间：
+在启动容器之前，先初始化 agent 的工作空间。`philip wiki init` 创建完整目录结构、模板文件，并自动安装内置 skill：
 
 ```bash
-# 初始化 workspace（创建 wiki 目录结构、模板文件）
 philip wiki init /path/to/workspace
-
-# 安装内置 skill 到 workspace
-philip wiki skill install --dir /path/to/workspace
 ```
 
 > `/path/to/workspace` 应与 `.env` 中的 `BUB_WORKSPACE` 一致。
-
-初始化后的 workspace 包含 wiki 知识库目录、配置模板和 agent skill 文件。
 
 ### 3. 创建必要目录
 

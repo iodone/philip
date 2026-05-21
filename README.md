@@ -31,31 +31,43 @@ uv sync
 
 ### 1. 初始化 Wiki Workspace
 
-在启动 agent 之前，先使用 `philip wiki init` 初始化一个 workspace。这个步骤创建 wiki 目录结构、模板文件，并将内置 skill 安装到 `.agents/skills/`：
+在启动 agent 之前，先使用 `philip wiki init` 初始化一个 workspace。这个命令创建完整目录结构、模板文件，并自动将内置 skill 安装到 `.agents/skills/`：
 
 ```bash
-# 选择一个 workspace 目录并初始化
 philip wiki init /path/to/workspace
-
-# 安装内置 skill 到 workspace
-philip wiki skill install --dir /path/to/workspace
 ```
 
 初始化后的 workspace 结构：
 
 ```
 /path/to/workspace/
+├── AGENTS.md               # Agent session 入口协议
+├── README.md               # Workspace 总览
+├── rules/
+│   ├── SOUL.md             # Agent 身份定义
+│   ├── USER.md             # 用户偏好与原则
+│   ├── COMMUNICATION.md    # 协作方式
+│   ├── SECURITY.md         # 安全规则
+│   ├── WORKSPACE.md        # 目录路由速查
+│   ├── axioms/             # 稳定判断规则
+│   └── skills/             # Skill 索引
+├── .agents/skills/
+│   └── workflow-llm-wiki/SKILL.md  # 内置 wiki 操作 skill
+├── contexts/               # 输入层（ingest 材料）
+│   ├── blog/               # 博客草稿
+│   ├── clippings/          # 外部原始资料
+│   ├── daily_records/      # 日级记录
+│   ├── life_record/        # 生活观察
+│   ├── survey_sessions/    # 调研过程
+│   └── thought_review/     # 深度分析
 ├── wiki/
-│   ├── pages/             # Wiki 页面（Obsidian 兼容）
-│   ├── wiki-purpose.md    # Wiki 目的与范围
-│   ├── wiki-schema.md     # 页面规范
-│   ├── wiki-agent.md      # Agent 行为规则
-│   └── wiki-log.md        # 操作日志
-├── sources/               # 原始源文档
-├── .llm-wiki/
-│   └── config.toml        # Vault 配置
-└── .agents/skills/
-    └── llm-wiki/SKILL.md  # 内置 wiki 操作 skill
+│   ├── pages/              # Wiki 页面（Obsidian 兼容）
+│   ├── wiki-purpose.md     # Wiki 目的与范围
+│   ├── wiki-schema.md      # 页面规范
+│   ├── wiki-agent.md       # Agent 行为规则
+│   └── wiki-log.md         # 操作日志
+└── .llm-wiki/
+    └── config.toml         # Vault 配置
 ```
 
 ### 2. 配置并启动 Agent

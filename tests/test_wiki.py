@@ -18,8 +18,8 @@ def vault(tmp_path: Path) -> Path:
     """Create a minimal wiki vault structure for testing."""
     wiki_pages = tmp_path / "wiki" / "pages"
     wiki_pages.mkdir(parents=True)
-    sources = tmp_path / "sources"
-    sources.mkdir()
+    contexts = tmp_path / "contexts"
+    contexts.mkdir()
     llm_wiki_dir = tmp_path / ".llm-wiki"
     llm_wiki_dir.mkdir()
 
@@ -137,17 +137,17 @@ class TestConfig:
 
         assert paths.wiki == vault / "wiki" / "pages"
         assert paths.wiki_root == vault / "wiki"
-        assert paths.sources == vault / "sources"
+        assert paths.contexts == vault / "contexts"
         assert paths.purpose == vault / "wiki" / "wiki-purpose.md"
         assert paths.sync_state == vault / ".llm-wiki" / "sync-state.json"
 
     def test_vault_paths_custom_dirs(self, tmp_path: Path) -> None:
         from philip.wiki.config import VaultSection, WikiConfig, vault_paths
 
-        config = WikiConfig(vault=VaultSection(source_dir="raw", wiki_dir="docs", pages_subdir=""))
+        config = WikiConfig(vault=VaultSection(context_dir="raw", wiki_dir="docs", pages_subdir=""))
         paths = vault_paths(tmp_path, config)
 
-        assert paths.sources == tmp_path / "raw"
+        assert paths.contexts == tmp_path / "raw"
         assert paths.wiki == tmp_path / "docs"
         assert paths.wiki_root == tmp_path / "docs"
 
@@ -559,15 +559,15 @@ class TestSkills:
         from philip.wiki.skills import list_skills
 
         skills = list_skills()
-        assert "llm-wiki" in skills
+        assert "workflow-llm-wiki" in skills
 
     def test_install_skills_to(self, tmp_path: Path) -> None:
         from philip.wiki.skills import install_skills_to
 
         target = tmp_path / "installed"
         result = install_skills_to(target)
-        assert "llm-wiki" in result.installed
-        assert (target / "llm-wiki" / "SKILL.md").exists()
+        assert "workflow-llm-wiki" in result.installed
+        assert (target / "workflow-llm-wiki" / "SKILL.md").exists()
 
     def test_install_skills_no_overwrite(self, tmp_path: Path) -> None:
         from philip.wiki.skills import install_skills_to
@@ -576,9 +576,9 @@ class TestSkills:
 
         # First install
         result1 = install_skills_to(target, overwrite=False)
-        assert "llm-wiki" in result1.installed
+        assert "workflow-llm-wiki" in result1.installed
 
         # Second install with no overwrite
         result2 = install_skills_to(target, overwrite=False)
-        assert "llm-wiki" in result2.skipped
-        assert "llm-wiki" not in result2.installed
+        assert "workflow-llm-wiki" in result2.skipped
+        assert "workflow-llm-wiki" not in result2.installed

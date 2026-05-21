@@ -1,0 +1,9 @@
+[vault]
+name = "My Wiki"
+language = "en"
+# context_dir = "contexts"  # Optional: customize input directory (default: "contexts")
+# wiki_dir = "wiki"         # Optional: customize wiki root directory (default: "wiki")
+# pages_subdir = "pages"    # Optional: store wiki pages in wiki/pages/ (default: "pages")
+
+# [db9]
+# url = "your-db9-connection-string"
