@@ -10,7 +10,12 @@ dependencies = [
     "bub-web-search",
     "bub-schedule",
     "click>=8.0",
+    "python-frontmatter>=1.0",
+    "toml>=0.10",
 ]
+
+[project.optional-dependencies]
+db9 = ["psycopg2-binary>=2.9"]
 
 [project.scripts]
 philip = "philip.cli.main:main"
@@ -39,7 +44,7 @@ build-backend = "hatchling.build"
 philip = "philip.plugins.plugin:PhilipPlugin"
 
 [tool.hatch.build.targets.wheel.force-include]
-"skills/llm-wiki" = "skills/llm-wiki"
+"philip/skills" = "philip/skills"
 
 [tool.hatch.metadata]
 allow-direct-references = true
