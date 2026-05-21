@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
-from philip.wiki.wiki import list_markdown_files
+from philip.capabilities.wiki.wiki import list_markdown_files
 
 
 # ---------------------------------------------------------------------------

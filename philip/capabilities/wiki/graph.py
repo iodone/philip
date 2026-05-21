@@ -5,7 +5,7 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass, field
 
-from philip.wiki.wiki import WikiPage
+from philip.capabilities.wiki.wiki import WikiPage
 
 
 # ---------------------------------------------------------------------------

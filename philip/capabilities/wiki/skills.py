@@ -9,8 +9,8 @@ from pathlib import Path
 
 def _get_skills_dir() -> Path:
     """Return the built-in skills directory within the philip package."""
-    # philip/wiki/skills.py -> philip/wiki -> philip -> philip/skills/
-    return Path(__file__).resolve().parent.parent / "skills"
+    # philip/capabilities/wiki/skills.py -> ... -> philip -> philip/skills/
+    return Path(__file__).resolve().parent.parent.parent / "skills"
 
 
 def list_skills(skills_dir: str | Path | None = None) -> list[str]:

@@ -10,8 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from philip.wiki.config import WikiConfig
-from philip.wiki.wiki import WikiPage
+from philip.capabilities.wiki.config import WikiConfig
+from philip.capabilities.wiki.wiki import WikiPage
 
 
 # ---------------------------------------------------------------------------

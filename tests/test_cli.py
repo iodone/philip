@@ -314,7 +314,7 @@ def test_wiki_search_hybrid_with_db9(tmp_path: Path):
         ("test-page", "Test Page", 0.9),
     ]
 
-    with patch("philip.wiki.db9._load_psycopg2") as mock_load:
+    with patch("philip.capabilities.wiki.db9._load_psycopg2") as mock_load:
         mock_pg = MagicMock()
         mock_pg.connect.return_value = mock_conn
         mock_load.return_value = mock_pg
@@ -389,7 +389,7 @@ def test_wiki_sync_with_db9(tmp_path: Path):
     mock_cursor = MagicMock()
     mock_conn.cursor.return_value = mock_cursor
 
-    with patch("philip.wiki.db9._load_psycopg2") as mock_load:
+    with patch("philip.capabilities.wiki.db9._load_psycopg2") as mock_load:
         mock_pg = MagicMock()
         mock_pg.connect.return_value = mock_conn
         mock_load.return_value = mock_pg

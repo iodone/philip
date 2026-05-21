@@ -6,7 +6,7 @@ import math
 import re
 from dataclasses import dataclass
 
-from philip.wiki.wiki import WikiPage
+from philip.capabilities.wiki.wiki import WikiPage
 
 # ---------------------------------------------------------------------------
 # CJK tokenizer
