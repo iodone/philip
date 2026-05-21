@@ -7,22 +7,11 @@ from pathlib import Path
 import click
 
 from philip.wiki.config import (
-    TEMPLATE_AGENT,
-    TEMPLATE_AGENTS_MD,
-    TEMPLATE_CONFIG,
-    TEMPLATE_LOG,
-    TEMPLATE_PURPOSE,
-    TEMPLATE_README_MD,
-    TEMPLATE_RULES_COMMUNICATION,
-    TEMPLATE_RULES_SECURITY,
-    TEMPLATE_RULES_SOUL,
-    TEMPLATE_RULES_USER,
-    TEMPLATE_RULES_WORKSPACE,
-    TEMPLATE_SCHEMA,
     VaultSection,
     WikiConfig,
     find_vault_root,
     load_config,
+    load_template,
     require_vault_root,
     vault_paths,
 )
@@ -83,20 +72,20 @@ def init(directory: str, force: bool) -> None:
     # --- Create files ---
     files_to_create = [
         # Wiki templates
-        (paths.purpose, TEMPLATE_PURPOSE),
-        (paths.schema, TEMPLATE_SCHEMA),
-        (paths.agent, TEMPLATE_AGENT),
-        (paths.config, TEMPLATE_CONFIG),
-        (paths.log, TEMPLATE_LOG),
+        (paths.purpose, load_template("purpose")),
+        (paths.schema, load_template("schema")),
+        (paths.agent, load_template("agent")),
+        (paths.config, load_template("config")),
+        (paths.log, load_template("log")),
         # Workspace-level files
-        (target / "AGENTS.md", TEMPLATE_AGENTS_MD),
-        (target / "README.md", TEMPLATE_README_MD),
+        (target / "AGENTS.md", load_template("agents_md")),
+        (target / "README.md", load_template("readme_md")),
         # Rules stubs
-        (paths.rules_dir / "SOUL.md", TEMPLATE_RULES_SOUL),
-        (paths.rules_dir / "USER.md", TEMPLATE_RULES_USER),
-        (paths.rules_dir / "COMMUNICATION.md", TEMPLATE_RULES_COMMUNICATION),
-        (paths.rules_dir / "SECURITY.md", TEMPLATE_RULES_SECURITY),
-        (paths.rules_dir / "WORKSPACE.md", TEMPLATE_RULES_WORKSPACE),
+        (paths.rules_dir / "SOUL.md", load_template("rules_soul")),
+        (paths.rules_dir / "USER.md", load_template("rules_user")),
+        (paths.rules_dir / "COMMUNICATION.md", load_template("rules_communication")),
+        (paths.rules_dir / "SECURITY.md", load_template("rules_security")),
+        (paths.rules_dir / "WORKSPACE.md", load_template("rules_workspace")),
     ]
 
     created_files: list[str] = []

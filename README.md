@@ -52,7 +52,7 @@ philip wiki init /path/to/workspace
 │   ├── axioms/             # 稳定判断规则
 │   └── skills/             # Skill 索引
 ├── .agents/skills/
-│   └── llm-wiki/SKILL.md   # 内置 wiki 操作 skill
+│   └── workflow-llm-wiki/SKILL.md  # 内置 wiki 操作 skill
 ├── contexts/               # 输入层（ingest 材料）
 │   ├── blog/               # 博客草稿
 │   ├── clippings/          # 外部原始资料

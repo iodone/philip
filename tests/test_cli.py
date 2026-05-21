@@ -58,7 +58,7 @@ def test_wiki_init(tmp_path: Path):
     assert (tmp_path / "my-wiki" / "AGENTS.md").exists()
     assert (tmp_path / "my-wiki" / "README.md").exists()
     # Skills auto-installed
-    assert (tmp_path / "my-wiki" / ".agents" / "skills" / "llm-wiki" / "SKILL.md").exists()
+    assert (tmp_path / "my-wiki" / ".agents" / "skills" / "workflow-llm-wiki" / "SKILL.md").exists()
     assert "skill" in result.output.lower() or "SKILL.md" in result.output
 
 
@@ -90,7 +90,7 @@ def test_wiki_init_skill_skip(tmp_path: Path):
 
     # First run installs skill
     runner.invoke(main, ["wiki", "init", target])
-    skill_path = tmp_path / "my-wiki" / ".agents" / "skills" / "llm-wiki" / "SKILL.md"
+    skill_path = tmp_path / "my-wiki" / ".agents" / "skills" / "workflow-llm-wiki" / "SKILL.md"
     assert skill_path.exists()
     skill_path.write_text("Custom skill content", encoding="utf-8")
 
@@ -264,7 +264,7 @@ def test_wiki_skill_list():
     runner = CliRunner()
     result = runner.invoke(main, ["wiki", "skill"])
     assert result.exit_code == 0
-    assert "llm-wiki" in result.output
+    assert "workflow-llm-wiki" in result.output
 
 
 def test_wiki_skill_install(tmp_path: Path):
@@ -273,8 +273,8 @@ def test_wiki_skill_install(tmp_path: Path):
     result = runner.invoke(main, ["wiki", "skill", "install", "--dir", str(tmp_path)])
     assert result.exit_code == 0
     assert "Installed" in result.output
-    assert (tmp_path / ".claude" / "skills" / "llm-wiki" / "SKILL.md").exists()
-    assert (tmp_path / ".agents" / "skills" / "llm-wiki" / "SKILL.md").exists()
+    assert (tmp_path / ".claude" / "skills" / "workflow-llm-wiki" / "SKILL.md").exists()
+    assert (tmp_path / ".agents" / "skills" / "workflow-llm-wiki" / "SKILL.md").exists()
 
 
 # ---------------------------------------------------------------------------
