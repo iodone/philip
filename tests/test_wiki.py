@@ -1,4 +1,4 @@
-"""Tests for philip.wiki core modules — config, wiki, search, graph, sync, skills."""
+"""Tests for philip.capabilities.wiki — config, wiki, search, graph, sync, skills."""
 
 from __future__ import annotations
 
@@ -99,38 +99,38 @@ Kafka uses a variant of [[raft-consensus]] for metadata management.
 
 class TestConfig:
     def test_find_vault_root(self, vault: Path) -> None:
-        from philip.wiki.config import find_vault_root
+        from philip.capabilities.wiki.config import find_vault_root
 
         root = find_vault_root(vault / "wiki" / "pages")
         assert root == vault
 
     def test_find_vault_root_returns_none_outside(self, tmp_path: Path) -> None:
-        from philip.wiki.config import find_vault_root
+        from philip.capabilities.wiki.config import find_vault_root
 
         assert find_vault_root(tmp_path) is None
 
     def test_require_vault_root_raises_outside(self, tmp_path: Path) -> None:
-        from philip.wiki.config import require_vault_root
+        from philip.capabilities.wiki.config import require_vault_root
 
         with pytest.raises(SystemExit):
             require_vault_root(tmp_path)
 
     def test_load_config(self, vault: Path) -> None:
-        from philip.wiki.config import load_config
+        from philip.capabilities.wiki.config import load_config
 
         config = load_config(vault)
         assert config.vault.name == "Test Wiki"
         assert config.vault.language == "en"
 
     def test_load_config_defaults_when_missing(self, tmp_path: Path) -> None:
-        from philip.wiki.config import load_config
+        from philip.capabilities.wiki.config import load_config
 
         config = load_config(tmp_path)
         assert config.vault.name == "My Wiki"
         assert config.vault.language == "en"
 
     def test_vault_paths(self, vault: Path) -> None:
-        from philip.wiki.config import load_config, vault_paths
+        from philip.capabilities.wiki.config import load_config, vault_paths
 
         config = load_config(vault)
         paths = vault_paths(vault, config)
@@ -142,7 +142,7 @@ class TestConfig:
         assert paths.sync_state == vault / ".llm-wiki" / "sync-state.json"
 
     def test_vault_paths_custom_dirs(self, tmp_path: Path) -> None:
-        from philip.wiki.config import VaultSection, WikiConfig, vault_paths
+        from philip.capabilities.wiki.config import VaultSection, WikiConfig, vault_paths
 
         config = WikiConfig(vault=VaultSection(context_dir="raw", wiki_dir="docs", pages_subdir=""))
         paths = vault_paths(tmp_path, config)
@@ -159,19 +159,19 @@ class TestConfig:
 
 class TestWiki:
     def test_extract_wikilinks(self) -> None:
-        from philip.wiki.wiki import extract_wikilinks
+        from philip.capabilities.wiki.wiki import extract_wikilinks
 
         content = "See [[raft-consensus]] and [[paxos|Paxos algorithm]]. Also [[raft-consensus]]."
         links = extract_wikilinks(content)
         assert links == ["raft-consensus", "paxos"]
 
     def test_extract_wikilinks_empty(self) -> None:
-        from philip.wiki.wiki import extract_wikilinks
+        from philip.capabilities.wiki.wiki import extract_wikilinks
 
         assert extract_wikilinks("no links here") == []
 
     def test_extract_wikilinks_cjk(self) -> None:
-        from philip.wiki.wiki import extract_wikilinks
+        from philip.capabilities.wiki.wiki import extract_wikilinks
 
         content = "参见 [[分布式一致性]] 和 [[Raft算法]]"
         links = extract_wikilinks(content)
@@ -179,7 +179,7 @@ class TestWiki:
         assert "Raft算法" in links
 
     def test_parse_wiki_page(self, vault: Path) -> None:
-        from philip.wiki.wiki import parse_wiki_page
+        from philip.capabilities.wiki.wiki import parse_wiki_page
 
         page = parse_wiki_page(vault / "wiki" / "pages" / "raft-consensus.md", vault / "wiki" / "pages")
         assert page.title == "Raft Consensus"
@@ -192,7 +192,7 @@ class TestWiki:
         assert "paxos" in page.wikilinks
 
     def test_load_wiki_pages(self, vault: Path) -> None:
-        from philip.wiki.wiki import load_wiki_pages
+        from philip.capabilities.wiki.wiki import load_wiki_pages
 
         pages = load_wiki_pages(vault / "wiki" / "pages")
         assert len(pages) == 4
@@ -201,14 +201,14 @@ class TestWiki:
         assert "apache-kafka" in slugs
 
     def test_list_markdown_files(self, vault: Path) -> None:
-        from philip.wiki.wiki import list_markdown_files
+        from philip.capabilities.wiki.wiki import list_markdown_files
 
         files = list_markdown_files(vault / "wiki" / "pages")
         assert len(files) == 4
         assert all(f.suffix == ".md" for f in files)
 
     def test_list_markdown_files_nonexistent(self, tmp_path: Path) -> None:
-        from philip.wiki.wiki import list_markdown_files
+        from philip.capabilities.wiki.wiki import list_markdown_files
 
         assert list_markdown_files(tmp_path / "nonexistent") == []
 
@@ -220,13 +220,13 @@ class TestWiki:
 
 class TestSearch:
     def test_tokenize_english(self) -> None:
-        from philip.wiki.search import tokenize
+        from philip.capabilities.wiki.search import tokenize
 
         tokens = tokenize("Hello World Test")
         assert tokens == ["hello", "world", "test"]
 
     def test_tokenize_cjk(self) -> None:
-        from philip.wiki.search import tokenize
+        from philip.capabilities.wiki.search import tokenize
 
         tokens = tokenize("分布式系统")
         # Unigrams: 分, 布, 式, 系, 统
@@ -236,7 +236,7 @@ class TestSearch:
         assert "系统" in tokens
 
     def test_tokenize_mixed(self) -> None:
-        from philip.wiki.search import tokenize
+        from philip.capabilities.wiki.search import tokenize
 
         tokens = tokenize("Kafka 分布式 streaming")
         assert "kafka" in tokens
@@ -244,13 +244,13 @@ class TestSearch:
         assert "streaming" in tokens
 
     def test_tokenize_empty(self) -> None:
-        from philip.wiki.search import tokenize
+        from philip.capabilities.wiki.search import tokenize
 
         assert tokenize("") == []
 
     def test_bm25_search_basic(self, vault: Path) -> None:
-        from philip.wiki.search import bm25_search
-        from philip.wiki.wiki import load_wiki_pages
+        from philip.capabilities.wiki.search import bm25_search
+        from philip.capabilities.wiki.wiki import load_wiki_pages
 
         pages = load_wiki_pages(vault / "wiki" / "pages")
         results = bm25_search(pages, "consensus algorithm")
@@ -260,8 +260,8 @@ class TestSearch:
 
     def test_bm25_search_cjk(self, tmp_path: Path) -> None:
         """Test BM25 with CJK content."""
-        from philip.wiki.search import bm25_search
-        from philip.wiki.wiki import WikiPage
+        from philip.capabilities.wiki.search import bm25_search
+        from philip.capabilities.wiki.wiki import WikiPage
 
         pages = [
             WikiPage(
@@ -286,28 +286,28 @@ class TestSearch:
         assert results[0].page.slug == "distributed-systems"
 
     def test_bm25_search_no_results(self, vault: Path) -> None:
-        from philip.wiki.search import bm25_search
-        from philip.wiki.wiki import load_wiki_pages
+        from philip.capabilities.wiki.search import bm25_search
+        from philip.capabilities.wiki.wiki import load_wiki_pages
 
         pages = load_wiki_pages(vault / "wiki" / "pages")
         results = bm25_search(pages, "quantum computing superposition")
         assert len(results) == 0
 
     def test_bm25_search_limit(self, vault: Path) -> None:
-        from philip.wiki.search import bm25_search
-        from philip.wiki.wiki import load_wiki_pages
+        from philip.capabilities.wiki.search import bm25_search
+        from philip.capabilities.wiki.wiki import load_wiki_pages
 
         pages = load_wiki_pages(vault / "wiki" / "pages")
         results = bm25_search(pages, "consensus", limit=1)
         assert len(results) <= 1
 
     def test_bm25_search_empty_pages(self) -> None:
-        from philip.wiki.search import bm25_search
+        from philip.capabilities.wiki.search import bm25_search
 
         assert bm25_search([], "test") == []
 
     def test_rrf_merge(self) -> None:
-        from philip.wiki.search import rrf_merge
+        from philip.capabilities.wiki.search import rrf_merge
 
         bm25 = [{"slug": "a", "score": 10.0}, {"slug": "b", "score": 5.0}]
         vector = [{"slug": "b", "score": 0.9}, {"slug": "c", "score": 0.8}]
@@ -319,7 +319,7 @@ class TestSearch:
         assert len(merged) == 3
 
     def test_rrf_merge_limit(self) -> None:
-        from philip.wiki.search import rrf_merge
+        from philip.capabilities.wiki.search import rrf_merge
 
         bm25 = [{"slug": "a", "score": 1.0}, {"slug": "b", "score": 0.9}]
         vector = [{"slug": "c", "score": 0.8}]
@@ -334,8 +334,8 @@ class TestSearch:
 
 class TestGraph:
     def test_analyze_graph_basic(self, vault: Path) -> None:
-        from philip.wiki.graph import analyze_graph
-        from philip.wiki.wiki import load_wiki_pages
+        from philip.capabilities.wiki.graph import analyze_graph
+        from philip.capabilities.wiki.wiki import load_wiki_pages
 
         pages = load_wiki_pages(vault / "wiki" / "pages")
         analysis = analyze_graph(pages)
@@ -348,8 +348,8 @@ class TestGraph:
 
     def test_analyze_graph_orphans(self, vault: Path) -> None:
         """Pages with no incoming links are orphans."""
-        from philip.wiki.graph import analyze_graph
-        from philip.wiki.wiki import load_wiki_pages
+        from philip.capabilities.wiki.graph import analyze_graph
+        from philip.capabilities.wiki.wiki import load_wiki_pages
 
         pages = load_wiki_pages(vault / "wiki" / "pages")
         analysis = analyze_graph(pages)
@@ -366,8 +366,8 @@ class TestGraph:
 
     def test_analyze_graph_wanted_pages(self, vault: Path) -> None:
         """Wikilinks that don't resolve are wanted pages."""
-        from philip.wiki.graph import analyze_graph
-        from philip.wiki.wiki import load_wiki_pages
+        from philip.capabilities.wiki.graph import analyze_graph
+        from philip.capabilities.wiki.wiki import load_wiki_pages
 
         pages = load_wiki_pages(vault / "wiki" / "pages")
         analysis = analyze_graph(pages)
@@ -376,8 +376,8 @@ class TestGraph:
         assert "paxos" in analysis.wanted_pages
 
     def test_analyze_graph_communities(self, vault: Path) -> None:
-        from philip.wiki.graph import analyze_graph
-        from philip.wiki.wiki import load_wiki_pages
+        from philip.capabilities.wiki.graph import analyze_graph
+        from philip.capabilities.wiki.wiki import load_wiki_pages
 
         pages = load_wiki_pages(vault / "wiki" / "pages")
         analysis = analyze_graph(pages)
@@ -387,7 +387,7 @@ class TestGraph:
         assert total_community_members > 0
 
     def test_analyze_graph_empty(self) -> None:
-        from philip.wiki.graph import analyze_graph
+        from philip.capabilities.wiki.graph import analyze_graph
 
         analysis = analyze_graph([])
         assert analysis.nodes == []
@@ -398,8 +398,8 @@ class TestGraph:
 
     def test_analyze_graph_alias_resolution(self, tmp_path: Path) -> None:
         """Aliases should be used for link resolution."""
-        from philip.wiki.graph import analyze_graph
-        from philip.wiki.wiki import WikiPage
+        from philip.capabilities.wiki.graph import analyze_graph
+        from philip.capabilities.wiki.wiki import WikiPage
 
         pages = [
             WikiPage(
@@ -436,14 +436,14 @@ class TestGraph:
 
 class TestSync:
     def test_load_sync_state_empty(self, tmp_path: Path) -> None:
-        from philip.wiki.sync import load_sync_state
+        from philip.capabilities.wiki.sync import load_sync_state
 
         state = load_sync_state(tmp_path / "nonexistent.json")
         assert state.entries == {}
         assert state.last_sync == ""
 
     def test_save_and_load_sync_state(self, tmp_path: Path) -> None:
-        from philip.wiki.sync import SyncEntry, SyncState, load_sync_state, save_sync_state
+        from philip.capabilities.wiki.sync import SyncEntry, SyncState, load_sync_state, save_sync_state
 
         state = SyncState(
             entries={
@@ -462,7 +462,7 @@ class TestSync:
         assert loaded.entries["wiki/test.md"].content_hash == "abc123"
 
     def test_content_hash(self, tmp_path: Path) -> None:
-        from philip.wiki.sync import content_hash
+        from philip.capabilities.wiki.sync import content_hash
 
         f = tmp_path / "test.md"
         f.write_text("Hello, world!", encoding="utf-8")
@@ -472,7 +472,7 @@ class TestSync:
         assert content_hash(f) == h
 
     def test_content_hash_different_content(self, tmp_path: Path) -> None:
-        from philip.wiki.sync import content_hash
+        from philip.capabilities.wiki.sync import content_hash
 
         a = tmp_path / "a.md"
         b = tmp_path / "b.md"
@@ -481,7 +481,7 @@ class TestSync:
         assert content_hash(a) != content_hash(b)
 
     def test_compute_sync_added(self, vault: Path) -> None:
-        from philip.wiki.sync import SyncState, compute_sync
+        from philip.capabilities.wiki.sync import SyncState, compute_sync
 
         state = SyncState()
         result = compute_sync([vault / "wiki" / "pages"], vault, state)
@@ -490,7 +490,7 @@ class TestSync:
         assert len(result.deleted) == 0
 
     def test_compute_sync_unchanged(self, vault: Path) -> None:
-        from philip.wiki.sync import (
+        from philip.capabilities.wiki.sync import (
             SyncState,
             compute_sync,
             update_sync_state,
@@ -509,7 +509,7 @@ class TestSync:
     def test_compute_sync_modified(self, vault: Path) -> None:
         import time
 
-        from philip.wiki.sync import (
+        from philip.capabilities.wiki.sync import (
             SyncState,
             compute_sync,
             update_sync_state,
@@ -531,7 +531,7 @@ class TestSync:
         assert "wiki/pages/raft-consensus.md" in result.modified
 
     def test_compute_sync_deleted(self, vault: Path) -> None:
-        from philip.wiki.sync import (
+        from philip.capabilities.wiki.sync import (
             SyncState,
             compute_sync,
             update_sync_state,
@@ -556,13 +556,13 @@ class TestSync:
 
 class TestSkills:
     def test_list_skills(self) -> None:
-        from philip.wiki.skills import list_skills
+        from philip.capabilities.wiki.skills import list_skills
 
         skills = list_skills()
         assert "workflow-llm-wiki" in skills
 
     def test_install_skills_to(self, tmp_path: Path) -> None:
-        from philip.wiki.skills import install_skills_to
+        from philip.capabilities.wiki.skills import install_skills_to
 
         target = tmp_path / "installed"
         result = install_skills_to(target)
@@ -570,7 +570,7 @@ class TestSkills:
         assert (target / "workflow-llm-wiki" / "SKILL.md").exists()
 
     def test_install_skills_no_overwrite(self, tmp_path: Path) -> None:
-        from philip.wiki.skills import install_skills_to
+        from philip.capabilities.wiki.skills import install_skills_to
 
         target = tmp_path / "installed"
 

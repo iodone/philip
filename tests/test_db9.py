@@ -1,4 +1,4 @@
-"""Tests for philip.wiki.db9 — PostgreSQL vector search client (mocked)."""
+"""Tests for philip.capabilities.wiki.db9 — PostgreSQL vector search client (mocked)."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from philip.wiki.config import DB9Section, VaultSection, WikiConfig
-from philip.wiki.wiki import WikiPage
+from philip.capabilities.wiki.config import DB9Section, VaultSection, WikiConfig
+from philip.capabilities.wiki.wiki import WikiPage
 
 
 # ---------------------------------------------------------------------------
@@ -23,7 +23,7 @@ def mock_psycopg2():
     mock_cursor = MagicMock()
     mock_conn.cursor.return_value = mock_cursor
 
-    with patch("philip.wiki.db9._load_psycopg2") as mock_load:
+    with patch("philip.capabilities.wiki.db9._load_psycopg2") as mock_load:
         mock_pg = MagicMock()
         mock_pg.connect.return_value = mock_conn
         mock_load.return_value = mock_pg
@@ -70,20 +70,20 @@ def sample_page():
 
 class TestCreateDB9Client:
     def test_returns_client_when_configured(self, db9_config):
-        from philip.wiki.db9 import create_db9_client
+        from philip.capabilities.wiki.db9 import create_db9_client
 
         client = create_db9_client(db9_config)
         assert client is not None
         client.close()
 
     def test_returns_none_when_no_db9(self):
-        from philip.wiki.db9 import create_db9_client
+        from philip.capabilities.wiki.db9 import create_db9_client
 
         config = WikiConfig(vault=VaultSection())
         assert create_db9_client(config) is None
 
     def test_returns_none_when_empty_url(self):
-        from philip.wiki.db9 import create_db9_client
+        from philip.capabilities.wiki.db9 import create_db9_client
 
         config = WikiConfig(vault=VaultSection(), db9=DB9Section(url=""))
         assert create_db9_client(config) is None
@@ -96,7 +96,7 @@ class TestCreateDB9Client:
 
 class TestDB9Schema:
     def test_ensure_schema_creates_tables(self, mock_psycopg2, db9_config):
-        from philip.wiki.db9 import create_db9_client
+        from philip.capabilities.wiki.db9 import create_db9_client
 
         client = create_db9_client(db9_config)
         client.ensure_schema()
@@ -116,7 +116,7 @@ class TestDB9Schema:
 
 class TestDB9PageCRUD:
     def test_upsert_page(self, mock_psycopg2, db9_config, sample_page):
-        from philip.wiki.db9 import create_db9_client
+        from philip.capabilities.wiki.db9 import create_db9_client
 
         client = create_db9_client(db9_config)
         client.upsert_page(sample_page, "abc123hash")
@@ -133,7 +133,7 @@ class TestDB9PageCRUD:
         assert main_call[0][1][6] == "abc123hash"  # content_hash
 
     def test_delete_page(self, mock_psycopg2, db9_config):
-        from philip.wiki.db9 import create_db9_client
+        from philip.capabilities.wiki.db9 import create_db9_client
 
         client = create_db9_client(db9_config)
         client.delete_page("test-slug")
@@ -153,7 +153,7 @@ class TestDB9PageCRUD:
 
 class TestDB9VectorSearch:
     def test_vector_search(self, mock_psycopg2, db9_config):
-        from philip.wiki.db9 import create_db9_client
+        from philip.capabilities.wiki.db9 import create_db9_client
 
         # Mock cursor.fetchall() to return search results
         mock_psycopg2["cursor"].fetchall.return_value = [
@@ -171,7 +171,7 @@ class TestDB9VectorSearch:
         assert results[1]["slug"] == "other-page"
 
     def test_vector_search_empty(self, mock_psycopg2, db9_config):
-        from philip.wiki.db9 import create_db9_client
+        from philip.capabilities.wiki.db9 import create_db9_client
 
         mock_psycopg2["cursor"].fetchall.return_value = []
 
@@ -187,7 +187,7 @@ class TestDB9VectorSearch:
 
 class TestDB9HashManagement:
     def test_get_content_hash(self, mock_psycopg2, db9_config):
-        from philip.wiki.db9 import create_db9_client
+        from philip.capabilities.wiki.db9 import create_db9_client
 
         mock_psycopg2["cursor"].fetchone.return_value = ("abc123def456",)
 
@@ -198,7 +198,7 @@ class TestDB9HashManagement:
         assert "SELECT content_hash" in str(mock_psycopg2["cursor"].execute.call_args)
 
     def test_get_content_hash_not_found(self, mock_psycopg2, db9_config):
-        from philip.wiki.db9 import create_db9_client
+        from philip.capabilities.wiki.db9 import create_db9_client
 
         mock_psycopg2["cursor"].fetchone.return_value = None
 
@@ -207,7 +207,7 @@ class TestDB9HashManagement:
         assert h is None
 
     def test_get_all_hashes(self, mock_psycopg2, db9_config):
-        from philip.wiki.db9 import create_db9_client
+        from philip.capabilities.wiki.db9 import create_db9_client
 
         mock_psycopg2["cursor"].fetchall.return_value = [
             ("page-a", "hash_a"),
@@ -220,7 +220,7 @@ class TestDB9HashManagement:
         assert hashes == {"page-a": "hash_a", "page-b": "hash_b"}
 
     def test_pages_by_context(self, mock_psycopg2, db9_config):
-        from philip.wiki.db9 import create_db9_client
+        from philip.capabilities.wiki.db9 import create_db9_client
 
         mock_psycopg2["cursor"].fetchall.return_value = [
             ("page-1",),
@@ -241,7 +241,7 @@ class TestDB9HashManagement:
 class TestDB9Connection:
     def test_lazy_connection(self, mock_psycopg2, db9_config):
         """Connection is established on first use, not on construction."""
-        from philip.wiki.db9 import create_db9_client
+        from philip.capabilities.wiki.db9 import create_db9_client
 
         client = create_db9_client(db9_config)
         # No connection yet
@@ -252,7 +252,7 @@ class TestDB9Connection:
         mock_psycopg2["connect"].assert_called_once()
 
     def test_close(self, mock_psycopg2, db9_config):
-        from philip.wiki.db9 import create_db9_client
+        from philip.capabilities.wiki.db9 import create_db9_client
 
         client = create_db9_client(db9_config)
         client.get_content_hash("test")  # trigger connection
@@ -261,7 +261,7 @@ class TestDB9Connection:
         mock_psycopg2["conn"].close.assert_called_once()
 
     def test_close_noop_when_not_connected(self, mock_psycopg2, db9_config):
-        from philip.wiki.db9 import create_db9_client
+        from philip.capabilities.wiki.db9 import create_db9_client
 
         client = create_db9_client(db9_config)
         # Close without ever connecting
@@ -276,7 +276,7 @@ class TestDB9Connection:
 
 class TestDB9Errors:
     def test_psycopg2_not_installed(self, db9_config):
-        from philip.wiki.db9 import _load_psycopg2
+        from philip.capabilities.wiki.db9 import _load_psycopg2
 
         with patch.dict("sys.modules", {"psycopg2": None}):
             with pytest.raises(RuntimeError, match="psycopg2 is required"):

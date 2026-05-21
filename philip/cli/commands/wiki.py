@@ -6,7 +6,7 @@ from pathlib import Path
 
 import click
 
-from philip.wiki.config import (
+from philip.capabilities.wiki.config import (
     VaultSection,
     WikiConfig,
     find_vault_root,
@@ -15,11 +15,11 @@ from philip.wiki.config import (
     require_vault_root,
     vault_paths,
 )
-from philip.wiki.graph import analyze_graph
-from philip.wiki.search import bm25_search, rrf_merge
-from philip.wiki.skills import install_skills_to, list_skills
-from philip.wiki.sync import compute_sync, load_sync_state, save_sync_state, update_sync_state
-from philip.wiki.wiki import list_markdown_files, load_wiki_pages
+from philip.capabilities.wiki.graph import analyze_graph
+from philip.capabilities.wiki.search import bm25_search, rrf_merge
+from philip.capabilities.wiki.skills import install_skills_to, list_skills
+from philip.capabilities.wiki.sync import compute_sync, load_sync_state, save_sync_state, update_sync_state
+from philip.capabilities.wiki.wiki import list_markdown_files, load_wiki_pages
 
 
 @click.group()
@@ -156,7 +156,7 @@ def search(query: str, limit: int, bm25_only: bool) -> None:
 
     if not bm25_only and config.db9 and config.db9.url:
         try:
-            from philip.wiki.db9 import create_db9_client
+            from philip.capabilities.wiki.db9 import create_db9_client
 
             db9 = create_db9_client(config)
             if db9:
@@ -395,9 +395,9 @@ def sync(dry_run: bool) -> None:
 
     # Sync to DB9 if configured
     if config.db9 and config.db9.url:
-        from philip.wiki.db9 import create_db9_client
-        from philip.wiki.sync import content_hash as compute_hash
-        from philip.wiki.wiki import parse_wiki_page
+        from philip.capabilities.wiki.db9 import create_db9_client
+        from philip.capabilities.wiki.sync import content_hash as compute_hash
+        from philip.capabilities.wiki.wiki import parse_wiki_page
 
         db9 = create_db9_client(config)
         if db9:
@@ -484,7 +484,7 @@ def install(target: str | None, workspace: str | None) -> None:
 @click.argument("name")
 def show(name: str) -> None:
     """Print skill content to stdout."""
-    from philip.wiki.skills import _get_skills_dir
+    from philip.capabilities.wiki.skills import _get_skills_dir
 
     skills_dir = _get_skills_dir()
     skill_path = skills_dir / name / "SKILL.md"
