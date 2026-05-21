@@ -10,16 +10,22 @@ Philip 是 [Bub](https://github.com/bubbuild/bub) 生态的主入口项目，提
 ## 快速上手
 
 ```bash
-# 安装
-pip install .
+git clone https://github.com/iodone/philip.git
+cd philip && uv sync
 
 # 初始化 workspace
 philip wiki init /path/to/workspace
+
+# 启动 gateway（宿主机模式）
+./run-host.sh
+
+# 或 Docker 模式
+docker-compose up -d
 ```
 
 `init` 创建完整目录结构（`wiki/`、`contexts/`、`rules/` 等），安装内置 skill，生成模板。重复运行安全。
 
-启动 Bub gateway 需要额外配置 `BUB_MODEL`、`BUB_API_KEY`、`BUB_WORKSPACE`，详见 [.env.example](.env.example) 和 [Docker 部署指南](docs/DOCKER_USAGE.md)。
+启动 gateway 需要在 `.env` 中配置 `BUB_MODEL`、`BUB_API_KEY`、`BUB_WORKSPACE`（指向 init 创建的 workspace）。详见 [.env.example](.env.example) 和 [Docker 部署指南](docs/DOCKER_USAGE.md)。
 
 ## CLI Capabilities
 
