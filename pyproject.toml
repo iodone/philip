@@ -13,7 +13,7 @@ dependencies = [
 
 [tool.uv.sources]
 bub = { git = "https://github.com/bubbuild/bub.git", branch = "main" }
-bub-im-bridge = { git = "https://github.com/iodone/bub-im-bridge.git", tag = "v0.6.2" }
+bub-im-bridge = { git = "https://github.com/iodone/bub-im-bridge.git", tag = "v0.6.3" }
 bub-web-search = { git = "https://github.com/bubbuild/bub-contrib.git", branch = "main", subdirectory = "packages/bub-web-search" }
 bub-schedule = { git = "https://github.com/bubbuild/bub-contrib.git", branch = "main", subdirectory = "packages/bub-schedule" }
 
