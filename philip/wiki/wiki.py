@@ -98,14 +98,9 @@ def parse_wiki_page(file_path: str | Path, wiki_dir: str | Path) -> WikiPage:
     tags = meta.get("tags", [])
     if not isinstance(tags, list):
         tags = []
-    # Support both "contexts" (new) and "sources" (legacy) frontmatter keys
     contexts = meta.get("contexts", [])
     if not isinstance(contexts, list):
         contexts = []
-    if not contexts:
-        sources = meta.get("sources", [])
-        if isinstance(sources, list):
-            contexts = sources
     aliases = meta.get("aliases", [])
     if not isinstance(aliases, list):
         aliases = []

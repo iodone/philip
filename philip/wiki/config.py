@@ -26,7 +26,7 @@ except ModuleNotFoundError:
 class VaultSection:
     name: str = "My Wiki"
     language: str = "en"
-    source_dir: str = "contexts"
+    context_dir: str = "contexts"
     wiki_dir: str = "wiki"
     pages_subdir: str = "pages"
 
@@ -405,9 +405,9 @@ TEMPLATE_CONFIG = """\
 [vault]
 name = "My Wiki"
 language = "en"
-# source_dir = "contexts"  # Optional: customize input directory (default: "contexts")
-# wiki_dir = "wiki"        # Optional: customize wiki root directory (default: "wiki")
-# pages_subdir = "pages"   # Optional: store wiki pages in wiki/pages/ (default: "pages")
+# context_dir = "contexts"  # Optional: customize input directory (default: "contexts")
+# wiki_dir = "wiki"         # Optional: customize wiki root directory (default: "wiki")
+# pages_subdir = "pages"    # Optional: store wiki pages in wiki/pages/ (default: "pages")
 
 # [db9]
 # url = "your-db9-connection-string"
@@ -472,7 +472,7 @@ def load_config(vault_root: str | Path) -> WikiConfig:
     vault = VaultSection(
         name=vault_raw.get("name", "My Wiki"),
         language=vault_raw.get("language", "en"),
-        source_dir=vault_raw.get("source_dir", "contexts"),
+        context_dir=vault_raw.get("context_dir", vault_raw.get("source_dir", "contexts")),
         wiki_dir=vault_raw.get("wiki_dir", "wiki"),
         pages_subdir=vault_raw.get("pages_subdir", "pages"),
     )
@@ -510,7 +510,7 @@ def vault_paths(root: str | Path, config: WikiConfig | None = None) -> VaultPath
     """Compute all canonical vault paths from root + config."""
     root = Path(root)
     cfg = config or DEFAULT_CONFIG
-    source_dir = cfg.vault.source_dir or "contexts"
+    context_dir = cfg.vault.context_dir or "contexts"
     wiki_dir = cfg.vault.wiki_dir or "wiki"
     pages_subdir = cfg.vault.pages_subdir
 
@@ -520,7 +520,7 @@ def vault_paths(root: str | Path, config: WikiConfig | None = None) -> VaultPath
     return VaultPaths(
         wiki=wiki_pages,
         wiki_root=wiki_root,
-        contexts=root / source_dir,
+        contexts=root / context_dir,
         purpose=wiki_root / "wiki-purpose.md",
         schema=wiki_root / "wiki-schema.md",
         agent=wiki_root / "wiki-agent.md",

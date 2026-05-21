@@ -144,7 +144,7 @@ class TestConfig:
     def test_vault_paths_custom_dirs(self, tmp_path: Path) -> None:
         from philip.wiki.config import VaultSection, WikiConfig, vault_paths
 
-        config = WikiConfig(vault=VaultSection(source_dir="raw", wiki_dir="docs", pages_subdir=""))
+        config = WikiConfig(vault=VaultSection(context_dir="raw", wiki_dir="docs", pages_subdir=""))
         paths = vault_paths(tmp_path, config)
 
         assert paths.contexts == tmp_path / "raw"

@@ -108,13 +108,23 @@ def init(directory: str, force: bool) -> None:
         else:
             skipped_files.append(str(path.relative_to(target)))
 
+    # --- Install built-in skills to workspace ---
+    skill_result = install_skills_to(paths.agents_skills_dir)
+    skill_installed = [f".agents/skills/{name}/SKILL.md" for name in skill_result.installed]
+    skill_skipped = [f".agents/skills/{name}/SKILL.md" for name in skill_result.skipped]
+    if not force:
+        created_files.extend(skill_installed)
+        skipped_files.extend(skill_skipped)
+    elif skill_installed:
+        created_files.extend(skill_installed)
+
     click.echo(f"Initialized wiki workspace in {target}")
     click.echo("")
     if created_files:
         click.echo("Created:")
         for f in created_files:
             click.echo(f"  {f}")
-    if skipped_files:
+    if skipped_files and not force:
         click.echo("Skipped (already exists):")
         for f in skipped_files:
             click.echo(f"  {f}")
@@ -123,8 +133,7 @@ def init(directory: str, force: bool) -> None:
     click.echo("  1. Edit wiki/wiki-purpose.md to describe your wiki")
     click.echo("  2. Edit rules/SOUL.md to define agent identity")
     click.echo("  3. Add wiki pages to wiki/pages/")
-    click.echo("  4. Run `philip wiki skill install` to install skills")
-    click.echo("  5. Use `philip wiki search <query>` to find content")
+    click.echo("  4. Use `philip wiki search <query>` to find content")
 
 
 # ---------------------------------------------------------------------------
