@@ -9,7 +9,11 @@ dependencies = [
     "bub-im-bridge",
     "bub-web-search",
     "bub-schedule",
+    "click>=8.0",
 ]
+
+[project.scripts]
+philip = "philip.cli.main:main"
 
 [tool.uv.sources]
 bub = { git = "https://github.com/bubbuild/bub.git", branch = "main" }
@@ -32,7 +36,10 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project.entry-points.bub]
-philip = "philip.plugin:PhilipPlugin"
+philip = "philip.plugins.plugin:PhilipPlugin"
+
+[tool.hatch.build.targets.wheel.force-include]
+"skills/llm-wiki" = "skills/llm-wiki"
 
 [tool.hatch.metadata]
 allow-direct-references = true

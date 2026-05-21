@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 from republic import ToolContext
 
-from philip.vision_settings import VisionSettings
+from philip.tools.vision_settings import VisionSettings
 
 
 # ---------------------------------------------------------------------------
@@ -69,7 +69,7 @@ def _make_context(media_items: list[dict] | None = None, **extra) -> ToolContext
 
 async def test_tool_returns_observation_for_current_images(monkeypatch):
     """Tool calls vision client and returns its observation."""
-    from philip.vision_tools import vision_inspect_tool
+    from philip.tools.vision_tools import vision_inspect_tool
 
     monkeypatch.setenv("BUB_VISION_MODEL", "openai:gpt-4.1-mini")
     monkeypatch.setenv("BUB_VISION_API_KEY", "sk-test")
@@ -80,7 +80,7 @@ async def test_tool_returns_observation_for_current_images(monkeypatch):
     ]
     context = _make_context(media_items=fake_media, vision_current_text="user asks about screenshot")
 
-    with patch("philip.vision_tools.VisionClient") as MockClient:
+    with patch("philip.tools.vision_tools.VisionClient") as MockClient:
         instance = MockClient.return_value
         instance.inspect_images = AsyncMock(
             return_value="Image observation: a screenshot showing an error dialog."
@@ -94,7 +94,7 @@ async def test_tool_returns_observation_for_current_images(monkeypatch):
 
 async def test_tool_returns_readable_error_when_unconfigured(monkeypatch):
     """Tool returns a readable message when vision config is missing."""
-    from philip.vision_tools import vision_inspect_tool
+    from philip.tools.vision_tools import vision_inspect_tool
 
     monkeypatch.delenv("BUB_VISION_MODEL", raising=False)
     monkeypatch.delenv("BUB_VISION_API_KEY", raising=False)
@@ -107,7 +107,7 @@ async def test_tool_returns_readable_error_when_unconfigured(monkeypatch):
 
 async def test_tool_skips_when_no_images(monkeypatch):
     """Tool returns a skip message when no images are in the current message."""
-    from philip.vision_tools import vision_inspect_tool
+    from philip.tools.vision_tools import vision_inspect_tool
 
     monkeypatch.setenv("BUB_VISION_MODEL", "openai:gpt-4.1-mini")
     monkeypatch.setenv("BUB_VISION_API_KEY", "sk-test")
@@ -120,7 +120,7 @@ async def test_tool_skips_when_no_images(monkeypatch):
 
 async def test_tool_applies_max_images(monkeypatch):
     """Tool limits the number of images sent to the vision client."""
-    from philip.vision_tools import VisionInspectInput, vision_inspect_tool
+    from philip.tools.vision_tools import VisionInspectInput, vision_inspect_tool
 
     monkeypatch.setenv("BUB_VISION_MODEL", "openai:gpt-4.1-mini")
     monkeypatch.setenv("BUB_VISION_API_KEY", "sk-test")
@@ -133,7 +133,7 @@ async def test_tool_applies_max_images(monkeypatch):
     ]
     context = _make_context(media_items=fake_media)
 
-    with patch("philip.vision_tools.VisionClient") as MockClient:
+    with patch("philip.tools.vision_tools.VisionClient") as MockClient:
         instance = MockClient.return_value
         instance.inspect_images = AsyncMock(return_value="observation")
 
@@ -149,7 +149,7 @@ async def test_tool_applies_max_images(monkeypatch):
 
 async def test_tool_handles_vision_api_failure(monkeypatch):
     """Tool returns a readable error when the vision API call fails."""
-    from philip.vision_tools import vision_inspect_tool
+    from philip.tools.vision_tools import vision_inspect_tool
 
     monkeypatch.setenv("BUB_VISION_MODEL", "openai:gpt-4.1-mini")
     monkeypatch.setenv("BUB_VISION_API_KEY", "sk-test")
@@ -160,7 +160,7 @@ async def test_tool_handles_vision_api_failure(monkeypatch):
     ]
     context = _make_context(media_items=fake_media)
 
-    with patch("philip.vision_tools.VisionClient") as MockClient:
+    with patch("philip.tools.vision_tools.VisionClient") as MockClient:
         instance = MockClient.return_value
         instance.inspect_images = AsyncMock(side_effect=RuntimeError("API timeout"))
         result = await vision_inspect_tool(params=None, context=context)  # type: ignore[arg-type]
@@ -172,7 +172,7 @@ async def test_tool_handles_vision_api_failure(monkeypatch):
 async def test_tool_passes_message_content_not_metadata_to_vision(monkeypatch):
     """Regression: tool must pass message content (vision_current_text), not
     the builtin context metadata (channel=$...|chat_id=...)."""
-    from philip.vision_tools import vision_inspect_tool
+    from philip.tools.vision_tools import vision_inspect_tool
 
     monkeypatch.setenv("BUB_VISION_MODEL", "openai:gpt-4.1-mini")
     monkeypatch.setenv("BUB_VISION_API_KEY", "sk-test")
@@ -188,7 +188,7 @@ async def test_tool_passes_message_content_not_metadata_to_vision(monkeypatch):
         vision_current_text="帮我看看这张报错截图怎么修",  # actual message — should be passed
     )
 
-    with patch("philip.vision_tools.VisionClient") as MockClient:
+    with patch("philip.tools.vision_tools.VisionClient") as MockClient:
         instance = MockClient.return_value
         instance.inspect_images = AsyncMock(return_value="observation")
         await vision_inspect_tool(params=None, context=context)  # type: ignore[arg-type]

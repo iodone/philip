@@ -9,7 +9,7 @@ import pytest
 from bub.channels.message import ChannelMessage, MediaItem
 from bub.types import State
 
-from philip.plugin import PhilipPlugin
+from philip.plugins.plugin import PhilipPlugin
 
 
 def test_philip_registers_bub_plugin_entry_point():

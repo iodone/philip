@@ -7,8 +7,8 @@ from republic import ToolContext
 
 from bub.tools import tool
 
-from philip.vision_client import VisionClient
-from philip.vision_settings import VisionSettings
+from philip.tools.vision_client import VisionClient
+from philip.tools.vision_settings import VisionSettings
 
 
 class VisionInspectInput(BaseModel):

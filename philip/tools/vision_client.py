@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from republic import LLM
 
-from philip.vision_settings import VisionSettings
+from philip.tools.vision_settings import VisionSettings
 
 
 class VisionClient:

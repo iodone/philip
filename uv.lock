@@ -1202,6 +1202,7 @@ dependencies = [
     { name = "bub-im-bridge" },
     { name = "bub-schedule" },
     { name = "bub-web-search" },
+    { name = "click" },
 ]
 
 [package.dev-dependencies]
@@ -1220,6 +1221,7 @@ requires-dist = [
     { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?tag=v0.6.3" },
     { name = "bub-schedule", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&branch=main" },
     { name = "bub-web-search", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&branch=main" },
+    { name = "click", specifier = ">=8.0" },
 ]
 
 [package.metadata.requires-dev]
