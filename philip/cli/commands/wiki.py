@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 
 import click
@@ -50,7 +51,7 @@ def init(directory: str, force: bool) -> None:
     )
     paths = vault_paths(target, default_config)
 
-    # --- Create directories ---
+    # --- Create empty directories (template/ files create their own parents) ---
     dirs_to_create = [
         paths.wiki,             # wiki/pages/
         paths.contexts,         # contexts/
@@ -60,42 +61,36 @@ def init(directory: str, force: bool) -> None:
         paths.contexts / "life_record",
         paths.contexts / "survey_sessions",
         paths.contexts / "thought_review",
-        paths.rules_dir,        # rules/
-        paths.rules_dir / "axioms",
-        paths.rules_dir / "skills",
-        paths.agents_skills_dir,  # .agents/skills/
         paths.llm_wiki_dir,     # .llm-wiki/
     ]
     for d in dirs_to_create:
         d.mkdir(parents=True, exist_ok=True)
 
-    # --- Create files ---
-    files_to_create = [
-        # Wiki templates
-        (paths.purpose, load_template("purpose")),
-        (paths.schema, load_template("schema")),
-        (paths.agent, load_template("agent")),
-        (paths.config, load_template("config")),
-        (paths.log, load_template("log")),
-        # Workspace-level files
-        (target / "AGENTS.md", load_template("agents_md")),
-        (target / "README.md", load_template("readme_md")),
-        # Rules stubs
-        (paths.rules_dir / "SOUL.md", load_template("rules_soul")),
-        (paths.rules_dir / "USER.md", load_template("rules_user")),
-        (paths.rules_dir / "COMMUNICATION.md", load_template("rules_communication")),
-        (paths.rules_dir / "SECURITY.md", load_template("rules_security")),
-        (paths.rules_dir / "WORKSPACE.md", load_template("rules_workspace")),
-    ]
+    # --- Materialize template/ → workspace ---
+    from philip.capabilities.wiki.config import _TEMPLATES_DIR
 
     created_files: list[str] = []
     skipped_files: list[str] = []
-    for path, content in files_to_create:
-        if not path.exists() or force:
-            path.write_text(content, encoding="utf-8")
-            created_files.append(str(path.relative_to(target)))
+
+    # Walk entire template/ directory and copy each file to workspace
+    for src_file in sorted(_TEMPLATES_DIR.rglob("*")):
+        if not src_file.is_file():
+            continue
+        rel = src_file.relative_to(_TEMPLATES_DIR)
+
+        # config.toml → .llm-wiki/config.toml
+        if str(rel) == "config.toml":
+            dest = paths.config
         else:
-            skipped_files.append(str(path.relative_to(target)))
+            dest = target / rel
+
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        rel_str = str(dest.relative_to(target))
+        if not dest.exists() or force:
+            shutil.copy2(src_file, dest)
+            created_files.append(rel_str)
+        else:
+            skipped_files.append(rel_str)
 
     # --- Install built-in skills to workspace ---
     skill_result = install_skills_to(paths.agents_skills_dir, overwrite=force)
