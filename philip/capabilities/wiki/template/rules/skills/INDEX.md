@@ -25,7 +25,6 @@
   - 流程：广泛扫描 → 深度验证 → 压力测试 → 定稿（≥3 轮动态滚动）
   - **要求 Opus 模型**：写作由 Opus 亲自完成，调研全部 delegate + 并行
 - [GitHub PR 工作流](../../.agents/skills/workflow-github/SKILL.md) ✅ — 基于 `gh` CLI 管理分支、提交、PR、review、merge 的完整协作流程
-- [GitLab MR 工作流](../../.agents/skills/workflow-gitlab/SKILL.md) ✅ — 基于 `glab` CLI 管理分支、提交、MR、review、merge 的完整协作流程
 - [知识飞轮设计模式](../../.agents/skills/workflow-knowledge-flywheel/SKILL.md) — 笨数据+笨方法+笨模型=精知识
 - [LLM Wiki 工作流](../../.agents/skills/workflow-llm-wiki/SKILL.md) ✅ — 负责 wiki 的 ingest、query、lint、research，输入层统一来自 `contexts/`
 - [内容发布工作流](../../.agents/skills/workflow-publish/SKILL.md) ⚙️ — 将 MD 报告转 HTML 发布到你自己的服务器，返回 URL
