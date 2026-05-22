@@ -11,21 +11,24 @@ Philip 是 [Bub](https://github.com/bubbuild/bub) 生态的主入口项目，提
 
 ```
 philip/
-├── capabilities/         # CLI 能力模块
-│   └── wiki/            # 知识库管理
-├── cli/                 # CLI 入口（click）
-├── plugins/             # Bub 插件
-├── skills/              # 内置 agent skill
-├── run-host.sh          # 宿主机模式启动脚本
-├── entrypoint.sh        # Docker 容器入口
-├── docker-compose.yml   # Docker 模式编排
-├── Dockerfile           # 容器镜像定义
-├── .env.example         # 配置模板
-├── pyproject.toml       # Python 依赖（含推荐插件）
-├── docs/                # 详细文档
-│   ├── DOCKER_USAGE.md  # Docker 部署指南
-│   └── WIKI.md          # Wiki CLI 详细用法
-└── AGENTS.md            # Agent 运行规则
+├── src/
+│   └── philip/                  # Python 包
+│       ├── capabilities/       # CLI 能力模块
+│       │   └── wiki/           # 知识库管理
+│       ├── cli/                # CLI 入口（click）
+│       ├── plugins/            # Bub 插件
+│       └── skills/             # 内置 agent skill
+├── tests/                      # 单元测试
+├── docs/                       # 详细文档
+│   ├── DOCKER_USAGE.md         # Docker 部署指南
+│   └── WIKI.md                 # Wiki CLI 详细用法
+├── run-host.sh                 # 宿主机模式启动脚本
+├── entrypoint.sh               # Docker 容器入口
+├── docker-compose.yml          # Docker 模式编排
+├── Dockerfile                  # 容器镜像定义
+├── .env.example                # 配置模板
+├── pyproject.toml              # Python 依赖（含推荐插件）
+└── AGENTS.md                   # Agent 运行规则
 ```
 
 ## 安装
@@ -35,7 +38,7 @@ philip/
 使用 `pipx` 安装 `philip` CLI，命令会注册到系统 PATH，agent 和 bash 脚本可直接调用：
 
 ```bash
-pipx install philip
+pipx install git+https://github.com/iodone/philip.git
 ```
 
 安装后即可在任意目录使用：
