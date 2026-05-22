@@ -30,6 +30,7 @@
 - [内容发布工作流](../../.agents/skills/workflow-publish/SKILL.md) ⚙️ — 将 MD 报告转 HTML 发布到你自己的服务器，返回 URL
 - [视频下载与语音识别工作流](../../.agents/skills/workflow-bilibili-whisper-transcription/SKILL.md) — Bilibili/YouTube 视频处理
 - [YC Office Hours](../../.agents/skills/workflow-office-hours/SKILL.md) ✅ — 产品诊断与设计思维头脑风暴。Startup 模式：六个逼问暴露需求真相；Builder 模式：side project 设计伙伴。产出设计文档，不写代码
+- [Spark](../../.agents/skills/workflow-spark/SKILL.md) ✅ — 头脑风暴 → 设计 spec。逐个问题探索意图，提出 2-3 种方案，写 spec 到 `contexts/thought_review/` 后 STOP，不自动链到实现
 
 
 ### BestPractice（最佳实践）
