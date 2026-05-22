@@ -107,10 +107,13 @@ Bub distribution 部分需要从源码运行：
 cp .env.example .env
 # 编辑 .env，填入 BUB_MODEL、BUB_API_KEY、BUB_WORKSPACE（指向上面的 workspace）
 
-# 宿主机模式（开发调试）
+# 宿主机开发模式（无 sandbox）
+uv run bub -w /path/to/workspace gateway
+
+# 宿主机隔离模式（boxsh sandbox）
 ./run-host.sh
 
-# 或 Docker 模式（生产部署）
+# 或容器部署模式
 docker-compose up -d
 ```
 
