@@ -85,7 +85,7 @@ def init(directory: str, force: bool) -> None:
             dest = target / rel
 
         dest.parent.mkdir(parents=True, exist_ok=True)
-        rel_str = str(rel)
+        rel_str = str(dest.relative_to(target))
         if not dest.exists() or force:
             shutil.copy2(src_file, dest)
             created_files.append(rel_str)
