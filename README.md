@@ -49,14 +49,14 @@ philip wiki search "agent architecture"
 philip wiki sync
 ```
 
-### 从源码开发
+### Bub 网关 / 从源码开发
 
-克隆仓库用于开发或运行 Bub 网关：
+Bub distribution 需要从源码运行（gateway 依赖不在 PyPI）：
 
 ```bash
 git clone https://github.com/iodone/philip.git
 cd philip
-uv sync
+uv sync --extra gateway
 ```
 
 ## 快速开始

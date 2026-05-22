@@ -5,16 +5,18 @@ description = "Bub main entrypoint project — startup, sandbox, and plugin asse
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "bub",
-    "bub-im-bridge",
-    "bub-web-search",
-    "bub-schedule",
     "click>=8.0",
     "python-frontmatter>=1.0",
     "toml>=0.10",
 ]
 
 [project.optional-dependencies]
+gateway = [
+    "bub",
+    "bub-im-bridge",
+    "bub-web-search",
+    "bub-schedule",
+]
 db9 = ["psycopg2-binary>=2.9"]
 
 [project.scripts]
