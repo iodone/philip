@@ -43,9 +43,12 @@ build-backend = "hatchling.build"
 [project.entry-points.bub]
 philip = "philip.plugins.plugin:PhilipPlugin"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/philip"]
+
 [tool.hatch.build.targets.wheel.force-include]
-"philip/skills" = "philip/skills"
-"philip/capabilities/wiki/template" = "philip/capabilities/wiki/template"
+"src/philip/skills" = "philip/skills"
+"src/philip/capabilities/wiki/template" = "philip/capabilities/wiki/template"
 
 [tool.hatch.metadata]
 allow-direct-references = true
@@ -55,7 +58,7 @@ default-groups = []
 
 [tool.ruff]
 target-version = "py312"
-src = ["philip"]
+src = ["src"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
