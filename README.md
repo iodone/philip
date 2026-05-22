@@ -30,6 +30,26 @@ philip/
 
 ## 安装
 
+### CLI 工具（推荐）
+
+使用 `pipx` 安装 `philip` CLI，命令会注册到系统 PATH，agent 和 bash 脚本可直接调用：
+
+```bash
+pipx install philip
+```
+
+安装后即可在任意目录使用：
+
+```bash
+philip wiki init /path/to/workspace
+philip wiki search "agent architecture"
+philip wiki sync
+```
+
+### 从源码开发
+
+克隆仓库用于开发或运行 Bub 网关：
+
 ```bash
 git clone https://github.com/iodone/philip.git
 cd philip
@@ -40,7 +60,7 @@ uv sync
 
 ### 1. 初始化 Wiki Workspace
 
-在启动 agent 之前，先使用 `philip wiki init` 初始化一个 workspace。这个命令创建完整目录结构、模板文件，并自动将内置 skill 安装到 `.agents/skills/`：
+使用 `philip wiki init` 初始化一个 workspace。创建完整目录结构、模板文件，并自动将内置 skill 安装到 `.agents/skills/`：
 
 ```bash
 philip wiki init /path/to/workspace
@@ -79,7 +99,9 @@ philip wiki init /path/to/workspace
     └── config.toml         # Vault 配置
 ```
 
-### 2. 配置并启动 Agent
+### 2. 配置并启动 Bub 网关
+
+Bub distribution 部分需要从源码运行：
 
 ```bash
 cp .env.example .env
