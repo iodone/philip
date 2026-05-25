@@ -654,3 +654,51 @@ class TestConcurrentRequests:
                 assert resp["result"]["text"] == f"echo: msg-{i}"
 
             await ws.close()
+
+    async def test_same_session_concurrent_stream_rejected(self) -> None:
+        """Second chat.stream on same session_id is explicitly rejected.
+
+        Uses two separate WS connections — the first holds the stream open,
+        the second attempts to start another stream on the same session.
+        """
+        channel = JsonRpcChannel(on_receive=lambda msg: None)
+        _init_app(channel)
+
+        # on_receive pushes one token, holds stream open (no sentinel)
+        async def _hold_on_receive(msg: ChannelMessage) -> None:
+            entry = channel._stream_queues.get(msg.session_id)
+            if entry is None:
+                return
+            _rid, queue = entry
+            await queue.put(FakeStreamEvent("text", {"delta": "hello"}))
+            # No sentinel — stream stays open
+
+        channel._on_receive = _hold_on_receive
+
+        server = TestServer(channel._app)
+        async with TestClient(server) as cli:
+            # First WS: start stream and read first token
+            ws1 = await cli.ws_connect("/ws")
+            await ws1.send_json({
+                "jsonrpc": "2.0", "id": "stream-1",
+                "method": "chat.stream",
+                "params": {"session_id": "dup-sess", "message": "first"},
+            })
+            msg = await ws1.receive_json(timeout=5)
+            assert msg["params"]["event"] == "token"
+
+            # Second WS: attempt stream on same session — should be rejected
+            ws2 = await cli.ws_connect("/ws")
+            await ws2.send_json({
+                "jsonrpc": "2.0", "id": "stream-2",
+                "method": "chat.stream",
+                "params": {"session_id": "dup-sess", "message": "second"},
+            })
+            resp = await ws2.receive_json(timeout=5)
+            assert "error" in resp
+            assert resp["error"]["code"] == -32002
+            assert "active stream" in resp["error"]["message"]
+            assert resp["id"] == "stream-2"
+
+            await ws1.close()
+            await ws2.close()

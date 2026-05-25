@@ -305,6 +305,15 @@ class JsonRpcChannel(Channel):
         self, ws: web.WebSocketResponse, parsed: Any,
         session_id: str, request_id: str,
     ) -> None:
+        if session_id in self._stream_queues:
+            await ws.send_json(
+                error_response(
+                    request_id, -32002,
+                    f"Session {session_id} already has an active stream",
+                )
+            )
+            return
+
         message = parsed.params.get("message", "")
         queue: asyncio.Queue[StreamEvent | None] = asyncio.Queue()
         self._stream_queues[session_id] = (request_id, queue)
