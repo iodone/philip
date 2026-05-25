@@ -1,4 +1,4 @@
-"""philip chat — interactive JSON-RPC client for local testing."""
+"""philip rpc chat — interactive JSON-RPC REPL for local testing."""
 
 from __future__ import annotations
 
@@ -17,13 +17,14 @@ import click
 @click.option("--ws", "use_ws", is_flag=True, help="Use WebSocket (enables streaming)")
 @click.option("--stream", is_flag=True, help="Use chat.stream (requires --ws)")
 def chat(url: str, ws_url: str, session_id: str | None, use_ws: bool, stream: bool) -> None:
-    """Interactive chat client for Philip JSON-RPC server.
+    """Interactive REPL for Philip JSON-RPC server.
+
+    Local commands: /help, /session, /quit
 
     Examples:
-      philip chat
-      philip chat --ws --stream
-      philip chat --session my-session
-      philip chat --url http://localhost:9000/rpc
+      philip rpc chat
+      philip rpc chat --ws --stream
+      philip rpc chat --session my-session
     """
     if stream and not use_ws:
         click.echo("--stream requires --ws", err=True)
@@ -32,12 +33,33 @@ def chat(url: str, ws_url: str, session_id: str | None, use_ws: bool, stream: bo
     sid = session_id or f"cli-{uuid.uuid4().hex[:8]}"
     click.echo(f"Session: {sid}")
     click.echo(f"{'WS' if use_ws else 'HTTP'} mode{' (streaming)' if stream else ''}")
-    click.echo("Type your message. Ctrl-D or /quit to exit.\n")
+    click.echo("Type your message. /help for commands.\n")
 
     if use_ws:
         asyncio.run(_ws_chat(ws_url, sid, stream))
     else:
         asyncio.run(_http_chat(url, sid))
+
+
+def _handle_local_command(line: str, session_id: str) -> bool:
+    """Handle /commands. Returns True if handled, False to send as message."""
+    cmd = line.strip().lower()
+    if cmd in ("/quit", "/exit", "/q"):
+        click.echo("Bye.")
+        raise _ExitRepl()
+    if cmd == "/help":
+        click.echo("  /session  — show current session ID")
+        click.echo("  /quit     — exit (also /exit, /q, Ctrl-D)")
+        click.echo("  anything else — send as message")
+        return True
+    if cmd == "/session":
+        click.echo(f"  session_id = {session_id}")
+        return True
+    return False
+
+
+class _ExitRepl(Exception):
+    """Raised to break out of the REPL loop."""
 
 
 async def _http_chat(url: str, session_id: str) -> None:
@@ -47,40 +69,46 @@ async def _http_chat(url: str, session_id: str) -> None:
     request_id = 0
 
     async with aiohttp.ClientSession() as session:
-        while True:
-            try:
-                line = await asyncio.get_event_loop().run_in_executor(None, _read_line)
-            except (EOFError, KeyboardInterrupt):
-                click.echo("\nBye.")
-                break
+        try:
+            while True:
+                try:
+                    line = await asyncio.get_event_loop().run_in_executor(None, _read_line)
+                except (EOFError, KeyboardInterrupt):
+                    click.echo("\nBye.")
+                    break
 
-            if not line:
-                continue
-            if line.strip() in ("/quit", "/exit", "/q"):
-                click.echo("Bye.")
-                break
+                if not line:
+                    continue
 
-            request_id += 1
-            payload = {
-                "jsonrpc": "2.0",
-                "id": f"cli-{request_id}",
-                "method": "chat.send",
-                "params": {
-                    "session_id": session_id,
-                    "message": line,
-                },
-            }
+                try:
+                    if _handle_local_command(line, session_id):
+                        continue
+                except _ExitRepl:
+                    break
 
-            try:
-                async with session.post(url, json=payload) as resp:
-                    body = await resp.json()
-                    if "error" in body:
-                        click.echo(f"[error {body['error']['code']}] {body['error']['message']}")
-                    else:
-                        click.echo(body["result"]["text"])
-            except aiohttp.ClientError as exc:
-                click.echo(f"[connection error] {exc}", err=True)
-                break
+                request_id += 1
+                payload = {
+                    "jsonrpc": "2.0",
+                    "id": f"cli-{request_id}",
+                    "method": "chat.send",
+                    "params": {
+                        "session_id": session_id,
+                        "message": line,
+                    },
+                }
+
+                try:
+                    async with session.post(url, json=payload) as resp:
+                        body = await resp.json()
+                        if "error" in body:
+                            click.echo(f"[error {body['error']['code']}] {body['error']['message']}")
+                        else:
+                            click.echo(body["result"]["text"])
+                except aiohttp.ClientError as exc:
+                    click.echo(f"[connection error] {exc}", err=True)
+                    break
+        except _ExitRepl:
+            pass
 
 
 async def _ws_chat(url: str, session_id: str, stream: bool) -> None:
@@ -108,8 +136,11 @@ async def _ws_chat(url: str, session_id: str, stream: bool) -> None:
 
                 if not line:
                     continue
-                if line.strip() in ("/quit", "/exit", "/q"):
-                    click.echo("Bye.")
+
+                try:
+                    if _handle_local_command(line, session_id):
+                        continue
+                except _ExitRepl:
                     break
 
                 request_id += 1
@@ -130,6 +161,8 @@ async def _ws_chat(url: str, session_id: str, stream: bool) -> None:
                     await _receive_stream(ws, f"cli-{request_id}")
                 else:
                     await _receive_single(ws, f"cli-{request_id}")
+        except _ExitRepl:
+            pass
         finally:
             await ws.close()
 
@@ -142,7 +175,6 @@ async def _receive_stream(ws, request_id: str) -> None:
             params = msg["params"]
             event = params.get("event")
             if event == "token":
-                # Print delta inline (no newline)
                 sys.stdout.write(params.get("delta", ""))
                 sys.stdout.flush()
             elif event == "tool_call":
@@ -155,7 +187,6 @@ async def _receive_stream(ws, request_id: str) -> None:
                 sys.stdout.write("\n")
                 sys.stdout.flush()
         elif "id" in msg and msg["id"] == request_id:
-            # Final JSON-RPC response
             if "error" in msg:
                 click.echo(f"[error {msg['error']['code']}] {msg['error']['message']}")
             break

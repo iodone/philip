@@ -187,3 +187,53 @@ class TestReadLine:
         with patch("builtins.input", side_effect=EOFError):
             with pytest.raises(EOFError):
                 _read_line()
+
+
+# ─── Local Commands ──────────────────────────────────────────────
+
+
+class TestLocalCommands:
+    def test_help_command(self) -> None:
+        from philip.cli.commands.chat import _handle_local_command
+
+        result = _handle_local_command("/help", "s1")
+        assert result is True
+
+    def test_session_command(self) -> None:
+        from philip.cli.commands.chat import _handle_local_command
+
+        result = _handle_local_command("/session", "my-sid")
+        assert result is True
+
+    def test_quit_raises(self) -> None:
+        from philip.cli.commands.chat import _ExitRepl, _handle_local_command
+
+        with pytest.raises(_ExitRepl):
+            _handle_local_command("/quit", "s1")
+
+    def test_exit_raises(self) -> None:
+        from philip.cli.commands.chat import _ExitRepl, _handle_local_command
+
+        with pytest.raises(_ExitRepl):
+            _handle_local_command("/exit", "s1")
+
+    def test_normal_message_not_handled(self) -> None:
+        from philip.cli.commands.chat import _handle_local_command
+
+        result = _handle_local_command("hello world", "s1")
+        assert result is False
+
+    def test_http_repl_with_local_commands(self) -> None:
+        """REPL handles /session then /quit without sending requests."""
+        from philip.cli.commands.chat import _http_chat
+
+        mock_session = AsyncMock()
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=False)
+
+        with patch("aiohttp.ClientSession", return_value=mock_session):
+            with patch("philip.cli.commands.chat._read_line", side_effect=["/session", "/quit"]):
+                asyncio.run(_http_chat("http://localhost:8420/rpc", "s1"))
+
+        # No HTTP requests should have been made
+        mock_session.post.assert_not_called()
