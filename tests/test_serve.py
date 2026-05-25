@@ -556,6 +556,6 @@ class TestCliServe:
         from philip.cli.main import main
 
         runner = CliRunner()
-        result = runner.invoke(main, ["serve", "--help"])
+        result = runner.invoke(main, ["rpc", "serve", "--help"])
         assert result.exit_code == 0
         assert "serve" in result.output.lower()

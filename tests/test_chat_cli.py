@@ -18,16 +18,23 @@ from philip.cli.main import main
 class TestChatCommandRegistered:
     def test_chat_help(self) -> None:
         runner = CliRunner()
-        result = runner.invoke(main, ["chat", "--help"])
+        result = runner.invoke(main, ["rpc", "chat", "--help"])
         assert result.exit_code == 0
         assert "chat" in result.output.lower()
         assert "--ws" in result.output
         assert "--stream" in result.output
         assert "--session" in result.output
 
+    def test_rpc_group_help(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(main, ["rpc", "--help"])
+        assert result.exit_code == 0
+        assert "chat" in result.output
+        assert "serve" in result.output
+
     def test_chat_requires_stream_with_ws(self) -> None:
         runner = CliRunner()
-        result = runner.invoke(main, ["chat", "--stream"])
+        result = runner.invoke(main, ["rpc", "chat", "--stream"])
         assert result.exit_code != 0
         assert "--ws" in result.output or "--stream" in result.output
 
