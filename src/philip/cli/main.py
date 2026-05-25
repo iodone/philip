@@ -12,8 +12,10 @@ def main() -> None:
 
 
 # Import and register subcommands
+from philip.cli.commands.serve import serve  # noqa: E402
 from philip.cli.commands.wiki import wiki  # noqa: E402
 
+main.add_command(serve)
 main.add_command(wiki)
 
 

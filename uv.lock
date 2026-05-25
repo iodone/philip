@@ -1198,10 +1198,7 @@ name = "philip"
 version = "0.2.0"
 source = { editable = "." }
 dependencies = [
-    { name = "bub" },
-    { name = "bub-im-bridge" },
-    { name = "bub-schedule" },
-    { name = "bub-web-search" },
+    { name = "aiohttp" },
     { name = "click" },
     { name = "python-frontmatter" },
     { name = "toml" },
@@ -1210,6 +1207,12 @@ dependencies = [
 [package.optional-dependencies]
 db9 = [
     { name = "psycopg2-binary" },
+]
+gateway = [
+    { name = "bub" },
+    { name = "bub-im-bridge" },
+    { name = "bub-schedule" },
+    { name = "bub-web-search" },
 ]
 
 [package.dev-dependencies]
@@ -1224,16 +1227,17 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bub", git = "https://github.com/bubbuild/bub.git?branch=main" },
-    { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?tag=v0.6.3" },
-    { name = "bub-schedule", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&branch=main" },
-    { name = "bub-web-search", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&branch=main" },
+    { name = "aiohttp", specifier = ">=3.9" },
+    { name = "bub", marker = "extra == 'gateway'", git = "https://github.com/bubbuild/bub.git?branch=main" },
+    { name = "bub-im-bridge", marker = "extra == 'gateway'", git = "https://github.com/iodone/bub-im-bridge.git?tag=v0.6.3" },
+    { name = "bub-schedule", marker = "extra == 'gateway'", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&branch=main" },
+    { name = "bub-web-search", marker = "extra == 'gateway'", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&branch=main" },
     { name = "click", specifier = ">=8.0" },
     { name = "psycopg2-binary", marker = "extra == 'db9'", specifier = ">=2.9" },
     { name = "python-frontmatter", specifier = ">=1.0" },
     { name = "toml", specifier = ">=0.10" },
 ]
-provides-extras = ["db9"]
+provides-extras = ["gateway", "db9"]
 
 [package.metadata.requires-dev]
 dev = [
