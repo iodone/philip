@@ -49,8 +49,18 @@ async def handle_rpc(request: web.Request, service: Service) -> web.Response:
         status = 400 if parsed.code in (PARSE_ERROR, INVALID_REQUEST) else 500
         return web.json_response(parsed.to_dict(), status=status)
 
+    from philip.server.service import StreamHandle
+
     result = await service.dispatch(parsed)
-    # Check if result is an error response
+    if isinstance(result, StreamHandle):
+        return web.json_response(
+            error_response(
+                parsed.id,
+                -32001,
+                "chat.stream requires WebSocket. Connect to /ws instead.",
+            ),
+            status=400,
+        )
     if "error" in result:
         return web.json_response(result, status=400)
     return web.json_response(result)

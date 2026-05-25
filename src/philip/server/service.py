@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from dataclasses import dataclass
 from typing import Any
+
+from bub.channels.message import ChannelMessage
+from bub.framework import BubFramework
 
 from philip.server.jsonrpc import (
     MISSING_SESSION_ID,
@@ -14,19 +19,32 @@ from philip.server.jsonrpc import (
 from philip.server.session_store import SessionStore
 
 
-class Service:
-    """Routes JSON-RPC methods. First slice: ping + session.get + chat.send stub."""
+@dataclass(frozen=True)
+class StreamHandle:
+    """Returned by dispatch when a method produces a stream of events."""
 
-    def __init__(self, session_store: SessionStore) -> None:
+    session_id: str
+    request_id: str | int | None
+    events: AsyncIterator[Any]
+
+
+class Service:
+    """Routes JSON-RPC methods to Bub framework."""
+
+    def __init__(self, session_store: SessionStore, framework: BubFramework) -> None:
         self.sessions = session_store
+        self.framework = framework
         self._handlers: dict[str, Any] = {
             "chat.ping": self._handle_ping,
             "session.get": self._handle_session_get,
             "chat.send": self._handle_chat_send,
+            "chat.stream": self._handle_chat_stream,
         }
 
-    async def dispatch(self, request: JsonRpcRequest) -> dict[str, Any]:
-        """Dispatch a validated request and return a JSON-RPC response dict."""
+    async def dispatch(
+        self, request: JsonRpcRequest
+    ) -> dict[str, Any] | StreamHandle:
+        """Dispatch a validated request. Returns dict or StreamHandle."""
         handler = self._handlers.get(request.method)
         if handler is None:
             return error_response(
@@ -47,6 +65,8 @@ class Service:
 
         try:
             result = await handler(request.params)
+            if isinstance(result, StreamHandle):
+                return result
             return success_response(request.id, result)
         except Exception as exc:
             from philip.server.jsonrpc import INTERNAL_ERROR
@@ -72,9 +92,89 @@ class Service:
         message: str = params.get("message", "")
         session = self.sessions.get_or_create(session_id)
         session.message_count += 1
-        # Stub — no actual Bub integration yet
+
+        inbound = ChannelMessage(
+            session_id=session_id,
+            content=message,
+            channel="jsonrpc",
+            chat_id=session_id,
+        )
+        result = await self.framework.process_inbound(inbound)
         return {
-            "session_id": session_id,
+            "session_id": result.session_id,
             "message_id": f"msg-{session.message_count}",
-            "status": "accepted",
+            "text": result.model_output,
+            "status": "completed",
         }
+
+    async def _handle_chat_stream(self, params: dict[str, Any]) -> StreamHandle:
+        """Start a streaming chat. Returns StreamHandle for WS transport."""
+        session_id: str = params["session_id"]
+        message: str = params.get("message", "")
+        session = self.sessions.get_or_create(session_id)
+        session.message_count += 1
+
+        inbound = ChannelMessage(
+            session_id=session_id,
+            content=message,
+            channel="jsonrpc",
+            chat_id=session_id,
+        )
+
+        # Get the stream from Bub framework
+        # We need to call process_inbound with stream_output=True, but that
+        # returns TurnResult after consuming the stream. Instead, we directly
+        # use the hook runtime to get the stream.
+        stream = await self._start_stream(inbound, session_id)
+        return StreamHandle(
+            session_id=session_id,
+            request_id=None,  # set by caller
+            events=stream,
+        )
+
+    async def _start_stream(
+        self, inbound: ChannelMessage, session_id: str
+    ) -> AsyncIterator[Any]:
+        """Set up and return the stream events iterator from Bub."""
+        from republic import StreamEvent
+
+        framework = self.framework
+
+        # Resolve hooks just like process_inbound does
+        state = {"_runtime_workspace": str(framework.workspace)}
+        for hook_state in reversed(
+            await framework._hook_runtime.call_many(
+                "load_state", message=inbound, session_id=session_id
+            )
+        ):
+            if isinstance(hook_state, dict):
+                state.update(hook_state)
+
+        prompt = await framework._hook_runtime.call_first(
+            "build_prompt", message=inbound, session_id=session_id, state=state
+        )
+        if not prompt:
+            from bub.envelope import content_of
+
+            prompt = content_of(inbound)
+
+        # Get the raw stream
+        raw_stream = await framework._hook_runtime.run_model_stream(
+            prompt=prompt, session_id=session_id, state=state
+        )
+
+        async def _iterate() -> AsyncIterator[Any]:
+            if raw_stream is None:
+                # Fallback: non-streaming model
+                output = await framework._hook_runtime.run_model(
+                    prompt=prompt, session_id=session_id, state=state
+                )
+                if output:
+                    yield StreamEvent(kind="text", data={"delta": output})
+                yield StreamEvent(kind="final", data={"text": output or "", "ok": True})
+                return
+
+            async for event in raw_stream:
+                yield event
+
+        return _iterate()
