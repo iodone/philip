@@ -2,8 +2,8 @@
 
 Philip 是 [Bub](https://github.com/bubbuild/bub) 生态的主入口项目，提供两部分能力：
 
-1. **Bub Distribution** — 多渠道 AI Agent 网关，支持飞书、Telegram、微信，通过 [boxsh](https://github.com/xicilion/boxsh) 沙箱隔离执行。负责启动、沙箱管理和 plugin 组装。
-2. **CLI Capabilities** — 命令行工具集，管理 Bub workspace。当前重点是 `wiki`：workspace 初始化、知识库搜索、图分析、同步。Wiki 是 Bub workspace 的知识层，配合 agent 启动前的环境准备使用。
+1. **Bub Distribution** — 多渠道 AI Agent 网关，支持飞书、Telegram、微信、JSON-RPC，通过 [boxsh](https://github.com/xicilion/boxsh) 沙箱隔离执行。负责启动、沙箱管理和 plugin 组装。
+2. **CLI Capabilities** — 命令行工具集，管理 Bub workspace，并提供 gateway 本地联调 client。当前重点是 `wiki` 和 `rpc chat`：`wiki` 负责 workspace 初始化、知识库搜索、图分析、同步；`rpc chat` 用于验证 JSON-RPC channel 的会话与流式行为。
 
 <!-- TODO: 加一张飞书对话截图或终端运行截图 -->
 
@@ -15,12 +15,16 @@ philip/
 │   └── philip/                  # Python 包
 │       ├── capabilities/       # CLI 能力模块
 │       │   └── wiki/           # 知识库管理
+│       ├── channels/           # Bub Channel 插件
+│       │   └── jsonrpc_channel.py  # JSON-RPC 2.0 通道
 │       ├── cli/                # CLI 入口（click）
 │       ├── plugins/            # Bub 插件
+│       ├── server/             # JSON-RPC 服务端实现
 │       └── skills/             # 内置 agent skill
 ├── tests/                      # 单元测试
 ├── docs/                       # 详细文档
 │   ├── DOCKER_USAGE.md         # Docker 部署指南
+│   ├── JSONRPC_CHANNEL.md      # JSON-RPC 通道 API 文档
 │   └── WIKI.md                 # Wiki CLI 详细用法
 ├── run-host.sh                 # 宿主机模式启动脚本
 ├── entrypoint.sh               # Docker 容器入口
@@ -47,6 +51,7 @@ pipx install git+https://github.com/iodone/philip.git
 philip wiki init /path/to/workspace
 philip wiki search "agent architecture"
 philip wiki sync
+philip rpc chat --help
 ```
 
 ### Bub 网关 / 从源码开发
@@ -122,6 +127,33 @@ docker-compose up -d
 
 启动后，agent 会自动读取 workspace 中的 wiki skill，通过 `philip wiki search/graph/sync` 等命令管理知识库。
 
+### 3. 验证 JSON-RPC Channel
+
+JSON-RPC 通道不是单独启动的服务，而是 **Bub gateway 自动加载的 channel 插件**。统一入口是：
+
+```bash
+uv run bub -w /path/to/workspace gateway
+```
+
+启动后默认监听：
+
+- `POST http://127.0.0.1:8420/rpc`
+- `GET ws://127.0.0.1:8420/ws`
+
+从源码仓库内联调时，推荐直接使用 repo 环境里的 CLI：
+
+```bash
+uv run philip rpc chat
+uv run philip rpc chat --ws --stream
+uv run philip rpc chat --session demo-session
+```
+
+如果你已经通过 `pipx` 安装了最新 CLI，也可以直接使用：
+
+```bash
+philip rpc chat
+```
+
 ## CLI Capabilities
 
 ### Wiki
@@ -136,6 +168,33 @@ docker-compose up -d
 | `philip wiki skill` | 管理 AI agent skill |
 
 详细用法见 [docs/WIKI.md](docs/WIKI.md)。
+
+### JSON-RPC
+
+| 命令 | 说明 |
+|:---|:---|
+| `philip rpc chat` | 交互式 REPL 客户端（HTTP 模式） |
+| `philip rpc chat --ws` | WebSocket 模式 |
+| `philip rpc chat --ws --stream` | 流式输出模式 |
+| `philip rpc chat --session <id>` | 指定 session ID |
+
+JSON-RPC 通道作为 Bub gateway 插件自动加载，支持 HTTP (`POST /rpc`) 和 WebSocket (`GET /ws`) 两种传输方式。适合本地调试、CLI 交互和外部系统集成。
+
+协议约束：
+
+- `session_id` 是业务会话键，对应 Bub tape/chat
+- JSON-RPC 顶层 `id` 只做单次 request correlation
+- 同一个 `session_id` 支持并发 unary `chat.send`
+- 同一个 `session_id` 的并发 `chat.stream` 会被显式拒绝，避免隐式覆盖
+
+```bash
+# 快速测试
+curl -s http://localhost:8420/rpc \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":"1","method":"chat.send","params":{"session_id":"test","message":"hello"}}'
+```
+
+详细 API 文档见 [docs/JSONRPC_CHANNEL.md](docs/JSONRPC_CHANNEL.md)。
 
 ## 配置
 
@@ -180,6 +239,7 @@ docker-compose up -d
 
 - [Docker 部署指南](docs/DOCKER_USAGE.md) — 容器模式部署、调试、COW 沙箱
 - [CLI Capabilities — Wiki](docs/WIKI.md) — wiki 命令详细用法、DB9 配置、workspace 结构
+- [JSON-RPC Channel](docs/JSONRPC_CHANNEL.md) — JSON-RPC 2.0 通道 API、WebSocket 流式协议、CLI 客户端
 
 ## License
 
