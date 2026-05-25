@@ -4,14 +4,17 @@ Plugs into Bub's gateway via provide_channels hook. The ChannelManager
 handles process_inbound lifecycle; this channel handles transport only.
 
 Request/response correlation:
-  - HTTP: creates asyncio.Future per request, resolved by send()
-  - WS non-stream: same as HTTP per-request
-  - WS stream: stream_events() wraps the Bub stream into JSON-RPC notifications
+  - _pending: session_id → deque of (request_id, Future)
+    FIFO order ensures concurrent requests on the same session are
+    resolved in arrival order.
+  - _stream_queues: session_id → (request_id, Queue)
+    One active stream per session (Bub processes turns sequentially).
 """
 
 from __future__ import annotations
 
 import asyncio
+from collections import deque
 from collections.abc import AsyncIterable, AsyncIterator
 from typing import Any
 
@@ -53,10 +56,10 @@ class JsonRpcChannel(Channel):
         self._app: web.Application | None = None
         self._runner: web.AppRunner | None = None
         self._site: web.TCPSite | None = None
-        # request_id → Future for HTTP request/response correlation
-        self._pending: dict[str, asyncio.Future[dict[str, Any]]] = {}
-        # session_id → queue for WS stream events
-        self._stream_queues: dict[str, asyncio.Queue[StreamEvent | None]] = {}
+        # session_id → deque of (request_id, Future) for HTTP/WS unary
+        self._pending: dict[str, deque[tuple[str, asyncio.Future[dict[str, Any]]]]] = {}
+        # session_id → (request_id, Queue) for WS stream
+        self._stream_queues: dict[str, tuple[str, asyncio.Queue[StreamEvent | None]]] = {}
 
     # ── Channel lifecycle ──────────────────────────────────────────
 
@@ -84,15 +87,19 @@ class JsonRpcChannel(Channel):
     # ── Outbound: called by ChannelManager after process_inbound ──
 
     async def send(self, message: ChannelMessage) -> None:
-        """Resolve pending HTTP/WS request with the outbound response."""
+        """Resolve the oldest pending request for this session."""
         session_id = message.session_id
-        future = self._pending.pop(session_id, None)
-        if future and not future.done():
-            future.set_result(success_response(None, {
-                "session_id": session_id,
-                "text": message.content,
-                "status": "completed",
-            }))
+        pending_deque = self._pending.get(session_id)
+        if pending_deque and len(pending_deque) > 0:
+            request_id, future = pending_deque.popleft()
+            if not future.done():
+                future.set_result(success_response(request_id, {
+                    "session_id": session_id,
+                    "text": message.content,
+                    "status": "completed",
+                }))
+            if not pending_deque:
+                del self._pending[session_id]
 
     def stream_events(
         self,
@@ -101,7 +108,8 @@ class JsonRpcChannel(Channel):
     ) -> AsyncIterable[StreamEvent]:
         """Wrap Bub stream to push events to WS clients via queue."""
         session_id = message.session_id
-        queue = self._stream_queues.get(session_id)
+        entry = self._stream_queues.get(session_id)
+        queue = entry[1] if entry else None
 
         async def _wrapper() -> AsyncIterator[StreamEvent]:
             async for event in stream:
@@ -144,16 +152,18 @@ class JsonRpcChannel(Channel):
             status = 400 if parsed.code in (PARSE_ERROR, INVALID_REQUEST) else 500
             return web.json_response(parsed.to_dict(), status=status)
 
+        request_id = parsed.id
+
         # Local methods (don't go through Bub framework)
         if parsed.method == "chat.ping":
-            return web.json_response(success_response(parsed.id, {"pong": True}))
+            return web.json_response(success_response(request_id, {"pong": True}))
 
         # Validate session_id
         session_id = parsed.params.get("session_id")
         if not session_id or not isinstance(session_id, str):
             return web.json_response(
                 error_response(
-                    parsed.id, -32000,
+                    request_id, -32000,
                     "params.session_id is required and must be a non-empty string",
                 ),
                 status=400,
@@ -161,7 +171,7 @@ class JsonRpcChannel(Channel):
 
         if parsed.method == "session.get":
             return web.json_response(
-                success_response(parsed.id, {
+                success_response(request_id, {
                     "session_id": session_id,
                     "note": "session state lives in Bub tape, not in channel",
                 })
@@ -171,7 +181,7 @@ class JsonRpcChannel(Channel):
         if parsed.method == "chat.stream":
             return web.json_response(
                 error_response(
-                    parsed.id, -32001,
+                    request_id, -32001,
                     "chat.stream requires WebSocket. Connect to /ws instead.",
                 ),
                 status=400,
@@ -181,7 +191,8 @@ class JsonRpcChannel(Channel):
         if parsed.method == "chat.send":
             message = parsed.params.get("message", "")
             future: asyncio.Future[dict[str, Any]] = asyncio.get_event_loop().create_future()
-            self._pending[session_id] = future
+            pending_deque = self._pending.setdefault(session_id, deque())
+            pending_deque.append((request_id, future))
 
             inbound = ChannelMessage(
                 session_id=session_id,
@@ -195,14 +206,15 @@ class JsonRpcChannel(Channel):
                 result = await asyncio.wait_for(future, timeout=300)
                 return web.json_response(result)
             except asyncio.TimeoutError:
-                self._pending.pop(session_id, None)
+                # Remove the timed-out request from the deque
+                self._remove_pending(session_id, request_id)
                 return web.json_response(
-                    error_response(parsed.id, -32603, "Request timed out"),
+                    error_response(request_id, -32603, "Request timed out"),
                     status=504,
                 )
 
         return web.json_response(
-            error_response(parsed.id, -32601, f"Method not found: {parsed.method}"),
+            error_response(request_id, -32601, f"Method not found: {parsed.method}"),
             status=400,
         )
 
@@ -221,39 +233,40 @@ class JsonRpcChannel(Channel):
                     await ws.send_json(parsed.to_dict())
                     continue
 
+                request_id = parsed.id
                 session_id = parsed.params.get("session_id")
                 if parsed.method != "chat.ping" and (
                     not session_id or not isinstance(session_id, str)
                 ):
                     await ws.send_json(
                         error_response(
-                            parsed.id, -32000,
+                            request_id, -32000,
                             "params.session_id is required",
                         )
                     )
                     continue
 
                 if parsed.method == "chat.ping":
-                    await ws.send_json(success_response(parsed.id, {"pong": True}))
+                    await ws.send_json(success_response(request_id, {"pong": True}))
                     continue
 
                 if parsed.method == "session.get":
-                    await ws.send_json(success_response(parsed.id, {
+                    await ws.send_json(success_response(request_id, {
                         "session_id": session_id,
                         "note": "session state lives in Bub tape",
                     }))
                     continue
 
                 if parsed.method == "chat.stream":
-                    await self._handle_ws_stream(ws, parsed, session_id)
+                    await self._handle_ws_stream(ws, parsed, session_id, request_id)
                     continue
 
                 if parsed.method == "chat.send":
-                    await self._handle_ws_send(ws, parsed, session_id)
+                    await self._handle_ws_send(ws, parsed, session_id, request_id)
                     continue
 
                 await ws.send_json(
-                    error_response(parsed.id, -32601, f"Method not found: {parsed.method}")
+                    error_response(request_id, -32601, f"Method not found: {parsed.method}")
                 )
 
             elif msg.type == web.WSMsgType.ERROR:
@@ -262,11 +275,13 @@ class JsonRpcChannel(Channel):
         return ws
 
     async def _handle_ws_send(
-        self, ws: web.WebSocketResponse, parsed: Any, session_id: str
+        self, ws: web.WebSocketResponse, parsed: Any,
+        session_id: str, request_id: str,
     ) -> None:
         message = parsed.params.get("message", "")
         future: asyncio.Future[dict[str, Any]] = asyncio.get_event_loop().create_future()
-        self._pending[session_id] = future
+        pending_deque = self._pending.setdefault(session_id, deque())
+        pending_deque.append((request_id, future))
 
         inbound = ChannelMessage(
             session_id=session_id,
@@ -278,20 +293,21 @@ class JsonRpcChannel(Channel):
 
         try:
             result = await asyncio.wait_for(future, timeout=300)
-            result["id"] = parsed.id
+            result["id"] = request_id
             await ws.send_json(result)
         except asyncio.TimeoutError:
-            self._pending.pop(session_id, None)
+            self._remove_pending(session_id, request_id)
             await ws.send_json(
-                error_response(parsed.id, -32603, "Request timed out")
+                error_response(request_id, -32603, "Request timed out")
             )
 
     async def _handle_ws_stream(
-        self, ws: web.WebSocketResponse, parsed: Any, session_id: str
+        self, ws: web.WebSocketResponse, parsed: Any,
+        session_id: str, request_id: str,
     ) -> None:
         message = parsed.params.get("message", "")
         queue: asyncio.Queue[StreamEvent | None] = asyncio.Queue()
-        self._stream_queues[session_id] = queue
+        self._stream_queues[session_id] = (request_id, queue)
 
         inbound = ChannelMessage(
             session_id=session_id,
@@ -374,11 +390,25 @@ class JsonRpcChannel(Channel):
                     "text": full_text,
                     "status": "completed",
                 },
-                "id": parsed.id,
+                "id": request_id,
             })
         except asyncio.TimeoutError:
             await ws.send_json(
-                error_response(parsed.id, -32603, "Stream timed out")
+                error_response(request_id, -32603, "Stream timed out")
             )
         finally:
             self._stream_queues.pop(session_id, None)
+
+    # ── Helpers ────────────────────────────────────────────────────
+
+    def _remove_pending(self, session_id: str, request_id: str) -> None:
+        """Remove a specific request from the pending deque."""
+        pending_deque = self._pending.get(session_id)
+        if pending_deque is None:
+            return
+        for i, (rid, _) in enumerate(pending_deque):
+            if rid == request_id:
+                del pending_deque[i]
+                break
+        if not pending_deque:
+            del self._pending[session_id]

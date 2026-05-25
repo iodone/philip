@@ -37,62 +37,45 @@ def _make_channel(
         session_id = msg.session_id
 
         # If stream queue exists, push events through it
-        queue = channel._stream_queues.get(session_id)
-        if queue is not None and events is not None:
+        entry = channel._stream_queues.get(session_id)
+        if entry is not None and events is not None:
+            _request_id, queue = entry
             for ev in events:
                 await queue.put(ev)
             await queue.put(None)
             return
 
-        # Otherwise resolve the pending future (for chat.send).
-        # Match what Channel.send() produces: success_response(None, result)
+        # Otherwise resolve the oldest pending future (for chat.send).
         from philip.server.jsonrpc import success_response
 
-        future = channel._pending.get(session_id)
-        if future and not future.done():
-            future.set_result(success_response(None, {
-                "session_id": session_id,
-                "text": "echo: " + msg.content,
-                "status": "completed",
-            }))
+        pending_deque = channel._pending.get(session_id)
+        if pending_deque and len(pending_deque) > 0:
+            req_id, future = pending_deque.popleft()
+            if not future.done():
+                future.set_result(success_response(req_id, {
+                    "session_id": session_id,
+                    "text": "echo: " + msg.content,
+                    "status": "completed",
+                }))
 
     handler = on_receive or _default_on_receive
     channel = JsonRpcChannel(on_receive=handler)
     return channel, received
 
 
-async def _start_channel(
-    channel: JsonRpcChannel,
-) -> tuple[TestServer, TestClient]:
-    """Start a channel in a test server and return client."""
-    server = TestServer(web.Application())
-    # We need to mount the channel's routes on the test server's app
-    # Instead, use the channel's own app
-    app = channel._app
-    if app is None:
-        # Manually init the app as start() would
-        app = web.Application()
-        app.router.add_post("/rpc", channel._handle_rpc)
-        app.router.add_route("*", "/rpc", channel._handle_rpc)
-        app.router.add_get("/ws", channel._handle_ws)
-        channel._app = app
-
-    server = TestServer(app)
-    client = TestClient(server)
-    await client.start_server()
-    return server, client
+def _init_app(channel: JsonRpcChannel) -> None:
+    """Manually init the aiohttp app for testing."""
+    channel._app = web.Application()
+    channel._app.router.add_post("/rpc", channel._handle_rpc)
+    channel._app.router.add_route("*", "/rpc", channel._handle_rpc)
+    channel._app.router.add_get("/ws", channel._handle_ws)
 
 
 @pytest.fixture
 async def channel_client():
     """Basic channel client with echo-style responses."""
     channel, received = _make_channel()
-    # Init the app manually (skip full start() which binds a real TCP site)
-    channel._app = web.Application()
-    channel._app.router.add_post("/rpc", channel._handle_rpc)
-    channel._app.router.add_route("*", "/rpc", channel._handle_rpc)
-    channel._app.router.add_get("/ws", channel._handle_ws)
-
+    _init_app(channel)
     server = TestServer(channel._app)
     async with TestClient(server) as cli:
         yield cli, channel, received
@@ -107,11 +90,7 @@ async def stream_channel_client():
         FakeStreamEvent("final", {"text": "Hello world", "ok": True}),
     ]
     channel, received = _make_channel(events=events)
-    channel._app = web.Application()
-    channel._app.router.add_post("/rpc", channel._handle_rpc)
-    channel._app.router.add_route("*", "/rpc", channel._handle_rpc)
-    channel._app.router.add_get("/ws", channel._handle_ws)
-
+    _init_app(channel)
     server = TestServer(channel._app)
     async with TestClient(server) as cli:
         yield cli, channel, received
@@ -177,7 +156,7 @@ class TestChannelHttp:
         assert body["result"]["session_id"] == "s1"
         assert body["result"]["text"] == "echo: hello"
         assert body["result"]["status"] == "completed"
-        # on_receive was called
+        assert body["id"] == "c2"
         assert len(received) == 1
         assert received[0].content == "hello"
         assert received[0].session_id == "s1"
@@ -288,6 +267,7 @@ class TestChannelStream:
         assert final_response is not None
         assert final_response["result"]["text"] == "Hello world"
         assert final_response["result"]["status"] == "completed"
+        assert final_response["id"] == "s1"
         await ws.close()
 
     async def test_stream_on_receive_called(self, stream_channel_client) -> None:
@@ -314,24 +294,45 @@ class TestChannelStream:
 
 
 class TestChannelSend:
-    async def test_send_resolves_pending(self) -> None:
-        """Channel.send() resolves a pending future for the session."""
+    async def test_send_resolves_oldest_pending(self) -> None:
+        """Channel.send() resolves the oldest pending request for the session."""
         channel, _ = _make_channel()
         loop = asyncio.get_event_loop()
-        future = loop.create_future()
-        channel._pending["test-session"] = future
 
+        # Queue two requests for the same session
+        future1 = loop.create_future()
+        future2 = loop.create_future()
+        from collections import deque
+        pending_deque = channel._pending.setdefault("test-session", deque())
+        pending_deque.append(("req-1", future1))
+        pending_deque.append(("req-2", future2))
+
+        # send() should resolve the first one
         msg = ChannelMessage(
             session_id="test-session",
-            content="response text",
+            content="first response",
             channel="jsonrpc",
             chat_id="test-session",
         )
         await channel.send(msg)
 
-        result = future.result()
-        assert result["result"]["text"] == "response text"
-        assert result["result"]["status"] == "completed"
+        assert future1.done()
+        assert not future2.done()
+        assert future1.result()["result"]["text"] == "first response"
+        assert future1.result()["id"] == "req-1"
+
+        # send() again resolves the second
+        msg2 = ChannelMessage(
+            session_id="test-session",
+            content="second response",
+            channel="jsonrpc",
+            chat_id="test-session",
+        )
+        await channel.send(msg2)
+
+        assert future2.done()
+        assert future2.result()["result"]["text"] == "second response"
+        assert future2.result()["id"] == "req-2"
         assert "test-session" not in channel._pending
 
     async def test_send_no_pending_is_noop(self) -> None:
@@ -354,7 +355,7 @@ class TestStreamEvents:
         """stream_events() forwards events to the WS queue."""
         channel, _ = _make_channel()
         queue = asyncio.Queue()
-        channel._stream_queues["s1"] = queue
+        channel._stream_queues["s1"] = ("req-stream-1", queue)
 
         events = [
             FakeStreamEvent("text", {"delta": "a"}),
@@ -384,8 +385,6 @@ class TestStreamEvents:
     async def test_stream_events_no_queue_still_yields(self) -> None:
         """stream_events() yields events even without a WS queue."""
         channel, _ = _make_channel()
-        # No queue registered for this session
-
         events = [FakeStreamEvent("text", {"delta": "x"})]
 
         async def _gen():
@@ -501,10 +500,7 @@ class TestChannelStreamWithTools:
             FakeStreamEvent("final", {"text": "Let me check found it", "ok": True}),
         ]
         channel, received = _make_channel(events=events)
-        channel._app = web.Application()
-        channel._app.router.add_post("/rpc", channel._handle_rpc)
-        channel._app.router.add_route("*", "/rpc", channel._handle_rpc)
-        channel._app.router.add_get("/ws", channel._handle_ws)
+        _init_app(channel)
 
         server = TestServer(channel._app)
         async with TestClient(server) as cli:
@@ -543,10 +539,7 @@ class TestChannelStreamWithTools:
             FakeStreamEvent("final", {"text": "partial", "ok": False}),
         ]
         channel, _ = _make_channel(events=events)
-        channel._app = web.Application()
-        channel._app.router.add_post("/rpc", channel._handle_rpc)
-        channel._app.router.add_route("*", "/rpc", channel._handle_rpc)
-        channel._app.router.add_get("/ws", channel._handle_ws)
+        _init_app(channel)
 
         server = TestServer(channel._app)
         async with TestClient(server) as cli:
@@ -568,4 +561,96 @@ class TestChannelStreamWithTools:
             error_events = [n for n in notifications if n["params"]["event"] == "error"]
             assert len(error_events) == 1
             assert "overloaded" in error_events[0]["params"]["message"]
+            await ws.close()
+
+
+# ─── Concurrent requests ────────────────────────────────────────
+
+
+class TestConcurrentRequests:
+    async def test_same_session_concurrent_send(self) -> None:
+        """Two concurrent chat.send on the same session_id both get resolved."""
+        channel, received = _make_channel()
+        _init_app(channel)
+
+        server = TestServer(channel._app)
+        async with TestClient(server) as cli:
+            ws = await cli.ws_connect("/ws")
+            # Send two requests with same session_id but different request_ids
+            await ws.send_json({
+                "jsonrpc": "2.0", "id": "conc-1",
+                "method": "chat.send",
+                "params": {"session_id": "same-sess", "message": "first"},
+            })
+            await ws.send_json({
+                "jsonrpc": "2.0", "id": "conc-2",
+                "method": "chat.send",
+                "params": {"session_id": "same-sess", "message": "second"},
+            })
+
+            r1 = await ws.receive_json(timeout=5)
+            r2 = await ws.receive_json(timeout=5)
+
+            # Both should be resolved, in FIFO order
+            assert r1["id"] == "conc-1"
+            assert r1["result"]["text"] == "echo: first"
+            assert r2["id"] == "conc-2"
+            assert r2["result"]["text"] == "echo: second"
+
+            assert len(received) == 2
+            await ws.close()
+
+    async def test_same_session_concurrent_http_send(self) -> None:
+        """Two concurrent HTTP chat.send on the same session_id."""
+        channel, received = _make_channel()
+        _init_app(channel)
+
+        server = TestServer(channel._app)
+        async with TestClient(server) as cli:
+            # Fire two requests concurrently
+            import asyncio as _aio
+
+            async def _send(req_id: str, msg: str):
+                status, body = await _post_rpc(cli, {
+                    "jsonrpc": "2.0", "id": req_id,
+                    "method": "chat.send",
+                    "params": {"session_id": "http-sess", "message": msg},
+                })
+                return status, body
+
+            # Use tasks to run concurrently
+            t1 = _aio.create_task(_send("h1", "alpha"))
+            t2 = _aio.create_task(_send("h2", "beta"))
+
+            s1, b1 = await t1
+            s2, b2 = await t2
+
+            assert s1 == 200 and s2 == 200
+            # Both resolved (order may vary due to concurrency)
+            texts = {b1["result"]["text"], b2["result"]["text"]}
+            assert texts == {"echo: alpha", "echo: beta"}
+            assert len(received) == 2
+            await ws.close() if False else None  # no ws here
+
+    async def test_request_id_not_affected_by_session_reuse(self) -> None:
+        """request_id correlation works independently of session_id."""
+        channel, _ = _make_channel()
+        _init_app(channel)
+
+        server = TestServer(channel._app)
+        async with TestClient(server) as cli:
+            ws = await cli.ws_connect("/ws")
+            # Same session, different request_ids
+            for i in range(5):
+                await ws.send_json({
+                    "jsonrpc": "2.0", "id": f"seq-{i}",
+                    "method": "chat.send",
+                    "params": {"session_id": "reuse-sess", "message": f"msg-{i}"},
+                })
+
+            for i in range(5):
+                resp = await ws.receive_json(timeout=5)
+                assert resp["id"] == f"seq-{i}"
+                assert resp["result"]["text"] == f"echo: msg-{i}"
+
             await ws.close()
