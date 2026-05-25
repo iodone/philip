@@ -344,3 +344,228 @@ class TestChannelSend:
             chat_id="no-such",
         )
         await channel.send(msg)  # should not raise
+
+
+# ─── stream_events() ─────────────────────────────────────────────
+
+
+class TestStreamEvents:
+    async def test_stream_events_wraps_and_pushes_to_queue(self) -> None:
+        """stream_events() forwards events to the WS queue."""
+        channel, _ = _make_channel()
+        queue = asyncio.Queue()
+        channel._stream_queues["s1"] = queue
+
+        events = [
+            FakeStreamEvent("text", {"delta": "a"}),
+            FakeStreamEvent("text", {"delta": "b"}),
+        ]
+
+        async def _gen():
+            for e in events:
+                yield e
+
+        msg = ChannelMessage(
+            session_id="s1", content="", channel="jsonrpc", chat_id="s1",
+        )
+        collected = []
+        async for ev in channel.stream_events(msg, _gen()):
+            collected.append(ev)
+
+        assert len(collected) == 2
+        assert collected[0].data["delta"] == "a"
+        # Queue should have events + sentinel
+        q_items = []
+        while not queue.empty():
+            q_items.append(await queue.get())
+        assert len(q_items) == 3  # 2 events + None sentinel
+        assert q_items[-1] is None
+
+    async def test_stream_events_no_queue_still_yields(self) -> None:
+        """stream_events() yields events even without a WS queue."""
+        channel, _ = _make_channel()
+        # No queue registered for this session
+
+        events = [FakeStreamEvent("text", {"delta": "x"})]
+
+        async def _gen():
+            for e in events:
+                yield e
+
+        msg = ChannelMessage(
+            session_id="no-queue", content="", channel="jsonrpc", chat_id="no-queue",
+        )
+        collected = []
+        async for ev in channel.stream_events(msg, _gen()):
+            collected.append(ev)
+        assert len(collected) == 1
+
+
+# ─── WS edge cases ──────────────────────────────────────────────
+
+
+class TestChannelWsEdgeCases:
+    async def test_ws_invalid_json(self, channel_client) -> None:
+        cli, _, _ = channel_client
+        ws = await cli.ws_connect("/ws")
+        await ws.send_str("not json")
+        resp = await ws.receive_json(timeout=5)
+        assert "error" in resp
+        assert resp["error"]["code"] == -32700
+        await ws.close()
+
+    async def test_ws_method_not_found(self, channel_client) -> None:
+        cli, _, _ = channel_client
+        ws = await cli.ws_connect("/ws")
+        await ws.send_json({
+            "jsonrpc": "2.0", "id": "w4",
+            "method": "no.such.method",
+            "params": {"session_id": "s1"},
+        })
+        resp = await ws.receive_json(timeout=5)
+        assert resp["error"]["code"] == -32601
+        await ws.close()
+
+    async def test_ws_multiple_requests(self, channel_client) -> None:
+        cli, _, _ = channel_client
+        ws = await cli.ws_connect("/ws")
+        await ws.send_json({
+            "jsonrpc": "2.0", "id": "w5a", "method": "chat.ping", "params": {},
+        })
+        await ws.send_json({
+            "jsonrpc": "2.0", "id": "w5b", "method": "chat.ping", "params": {},
+        })
+        r1 = await ws.receive_json(timeout=5)
+        r2 = await ws.receive_json(timeout=5)
+        assert r1["id"] == "w5a"
+        assert r2["id"] == "w5b"
+        await ws.close()
+
+    async def test_ws_session_get(self, channel_client) -> None:
+        cli, _, _ = channel_client
+        ws = await cli.ws_connect("/ws")
+        await ws.send_json({
+            "jsonrpc": "2.0", "id": "w6",
+            "method": "session.get", "params": {"session_id": "ws-test"},
+        })
+        resp = await ws.receive_json(timeout=5)
+        assert resp["result"]["session_id"] == "ws-test"
+        await ws.close()
+
+
+# ─── HTTP edge cases ─────────────────────────────────────────────
+
+
+class TestChannelHttpEdgeCases:
+    async def test_empty_body(self, channel_client) -> None:
+        cli, _, _ = channel_client
+        resp = await cli.post(
+            "/rpc", data=b"", headers={"Content-Type": "application/json"},
+        )
+        assert resp.status == 400
+
+    async def test_wrong_content_type(self, channel_client) -> None:
+        cli, _, _ = channel_client
+        resp = await cli.post(
+            "/rpc", data=b"{}", headers={"Content-Type": "text/plain"},
+        )
+        assert resp.status == 415
+
+    async def test_session_get(self, channel_client) -> None:
+        cli, _, _ = channel_client
+        status, body = await _post_rpc(cli, {
+            "jsonrpc": "2.0", "id": "c6",
+            "method": "session.get", "params": {"session_id": "test-abc"},
+        })
+        assert status == 200
+        assert body["result"]["session_id"] == "test-abc"
+
+    async def test_get_method_rejected(self, channel_client) -> None:
+        """Non-POST methods to /rpc return 405."""
+        cli, _, _ = channel_client
+        resp = await cli.get("/rpc")
+        assert resp.status == 405
+
+
+# ─── Stream with tool calls ─────────────────────────────────────
+
+
+class TestChannelStreamWithTools:
+    async def test_stream_tool_call_events(self) -> None:
+        """Streaming with tool_call and tool_result events."""
+        events = [
+            FakeStreamEvent("text", {"delta": "Let me check"}),
+            FakeStreamEvent("tool_call", {"name": "search", "args": {"q": "test"}}),
+            FakeStreamEvent("tool_result", {"name": "search", "result": "found"}),
+            FakeStreamEvent("text", {"delta": " found it"}),
+            FakeStreamEvent("final", {"text": "Let me check found it", "ok": True}),
+        ]
+        channel, received = _make_channel(events=events)
+        channel._app = web.Application()
+        channel._app.router.add_post("/rpc", channel._handle_rpc)
+        channel._app.router.add_route("*", "/rpc", channel._handle_rpc)
+        channel._app.router.add_get("/ws", channel._handle_ws)
+
+        server = TestServer(channel._app)
+        async with TestClient(server) as cli:
+            ws = await cli.ws_connect("/ws")
+            await ws.send_json({
+                "jsonrpc": "2.0", "id": "t1",
+                "method": "chat.stream",
+                "params": {"session_id": "tool-s1", "message": "search"},
+            })
+
+            notifications = []
+            while True:
+                msg = await ws.receive_json(timeout=5)
+                if "method" in msg and msg["method"] == "chat.stream.event":
+                    notifications.append(msg)
+                    if msg["params"]["event"] == "done":
+                        break
+
+            events_kind = [n["params"]["event"] for n in notifications]
+            assert "token" in events_kind
+            assert "tool_call" in events_kind
+            assert "tool_result" in events_kind
+            assert "done" in events_kind
+
+            tool_call = next(n for n in notifications if n["params"]["event"] == "tool_call")
+            assert tool_call["params"]["name"] == "search"
+            assert tool_call["params"]["args"] == {"q": "test"}
+
+            await ws.close()
+
+    async def test_stream_error_event(self) -> None:
+        """Streaming with an error event."""
+        events = [
+            FakeStreamEvent("text", {"delta": "partial"}),
+            FakeStreamEvent("error", {"message": "model overloaded"}),
+            FakeStreamEvent("final", {"text": "partial", "ok": False}),
+        ]
+        channel, _ = _make_channel(events=events)
+        channel._app = web.Application()
+        channel._app.router.add_post("/rpc", channel._handle_rpc)
+        channel._app.router.add_route("*", "/rpc", channel._handle_rpc)
+        channel._app.router.add_get("/ws", channel._handle_ws)
+
+        server = TestServer(channel._app)
+        async with TestClient(server) as cli:
+            ws = await cli.ws_connect("/ws")
+            await ws.send_json({
+                "jsonrpc": "2.0", "id": "t2",
+                "method": "chat.stream",
+                "params": {"session_id": "err-s1", "message": "test"},
+            })
+
+            notifications = []
+            while True:
+                msg = await ws.receive_json(timeout=5)
+                if "method" in msg and msg["method"] == "chat.stream.event":
+                    notifications.append(msg)
+                    if msg["params"]["event"] == "done":
+                        break
+
+            error_events = [n for n in notifications if n["params"]["event"] == "error"]
+            assert len(error_events) == 1
+            assert "overloaded" in error_events[0]["params"]["message"]
+            await ws.close()
