@@ -30,7 +30,9 @@ class TestChatCommandRegistered:
         result = runner.invoke(main, ["rpc", "--help"])
         assert result.exit_code == 0
         assert "chat" in result.output
-        assert "serve" in result.output
+        # serve is removed — use `bub gateway` instead
+        from philip.cli.commands.rpc import rpc as rpc_group
+        assert "serve" not in rpc_group.commands
 
     def test_chat_requires_stream_with_ws(self) -> None:
         runner = CliRunner()

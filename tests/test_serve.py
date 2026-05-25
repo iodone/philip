@@ -551,11 +551,7 @@ class TestSessionStore:
 
 
 class TestCliServe:
-    def test_serve_command_registered(self) -> None:
-        from click.testing import CliRunner
-        from philip.cli.main import main
-
-        runner = CliRunner()
-        result = runner.invoke(main, ["rpc", "serve", "--help"])
-        assert result.exit_code == 0
-        assert "serve" in result.output.lower()
+    def test_serve_command_removed_from_cli(self) -> None:
+        """philip rpc serve is removed — use `bub gateway` instead."""
+        from philip.cli.commands.rpc import rpc as rpc_group
+        assert "serve" not in rpc_group.commands
