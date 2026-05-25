@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
-from dataclasses import dataclass
+import asyncio
+from collections.abc import AsyncIterable, AsyncIterator
+from dataclasses import dataclass, field
 from typing import Any
 
 from bub.channels.message import ChannelMessage
 from bub.framework import BubFramework
+from bub.types import Envelope, TurnResult
 
 from philip.server.jsonrpc import (
     MISSING_SESSION_ID,
@@ -18,6 +20,9 @@ from philip.server.jsonrpc import (
 )
 from philip.server.session_store import SessionStore
 
+# Sentinel to signal stream completion
+_STREAM_DONE = object()
+
 
 @dataclass(frozen=True)
 class StreamHandle:
@@ -26,6 +31,36 @@ class StreamHandle:
     session_id: str
     request_id: str | int | None
     events: AsyncIterator[Any]
+
+
+@dataclass
+class StreamCaptureRouter:
+    """OutboundChannelRouter that captures stream events into a queue.
+
+    Used by chat.stream to intercept Bub's model stream while keeping
+    full process_inbound tape/turn semantics.
+    """
+
+    queue: asyncio.Queue[Any] = field(default_factory=asyncio.Queue)
+
+    def wrap_stream(
+        self, message: Envelope, stream: AsyncIterable[Any]
+    ) -> AsyncIterable[Any]:
+        """Intercept stream events and forward them to the queue."""
+
+        async def _wrapper() -> AsyncIterator[Any]:
+            async for event in stream:
+                await self.queue.put(event)
+                yield event
+            await self.queue.put(_STREAM_DONE)
+
+        return _wrapper()
+
+    async def dispatch_output(self, message: Envelope) -> bool:
+        return False
+
+    async def quit(self, session_id: str) -> None:
+        pass
 
 
 class Service:
@@ -108,7 +143,11 @@ class Service:
         }
 
     async def _handle_chat_stream(self, params: dict[str, Any]) -> StreamHandle:
-        """Start a streaming chat. Returns StreamHandle for WS transport."""
+        """Start a streaming chat via process_inbound(stream_output=True).
+
+        Uses StreamCaptureRouter to intercept stream events while keeping
+        full tape/turn semantics from process_inbound.
+        """
         session_id: str = params["session_id"]
         message: str = params.get("message", "")
         session = self.sessions.get_or_create(session_id)
@@ -121,60 +160,40 @@ class Service:
             chat_id=session_id,
         )
 
-        # Get the stream from Bub framework
-        # We need to call process_inbound with stream_output=True, but that
-        # returns TurnResult after consuming the stream. Instead, we directly
-        # use the hook runtime to get the stream.
-        stream = await self._start_stream(inbound, session_id)
+        router = StreamCaptureRouter()
+
+        async def _run_and_stream() -> AsyncIterator[Any]:
+            # Temporarily bind our capture router so _run_model wraps
+            # the stream through it
+            previous_router = self.framework._outbound_router
+            self.framework.bind_outbound_router(router)
+
+            # Run the full turn as a background task so we can consume
+            # the queue concurrently
+            turn_task = asyncio.create_task(
+                self.framework.process_inbound(inbound, stream_output=True)
+            )
+
+            try:
+                while True:
+                    event = await router.queue.get()
+                    if event is _STREAM_DONE:
+                        # Wait for turn to complete and get the result
+                        result = await turn_task
+                        yield {
+                            "kind": "__turn_result__",
+                            "data": {"result": result},
+                        }
+                        return
+                    yield event
+            except Exception:
+                turn_task.cancel()
+                raise
+            finally:
+                self.framework.bind_outbound_router(previous_router)
+
         return StreamHandle(
             session_id=session_id,
             request_id=None,  # set by caller
-            events=stream,
+            events=_run_and_stream(),
         )
-
-    async def _start_stream(
-        self, inbound: ChannelMessage, session_id: str
-    ) -> AsyncIterator[Any]:
-        """Set up and return the stream events iterator from Bub."""
-        from republic import StreamEvent
-
-        framework = self.framework
-
-        # Resolve hooks just like process_inbound does
-        state = {"_runtime_workspace": str(framework.workspace)}
-        for hook_state in reversed(
-            await framework._hook_runtime.call_many(
-                "load_state", message=inbound, session_id=session_id
-            )
-        ):
-            if isinstance(hook_state, dict):
-                state.update(hook_state)
-
-        prompt = await framework._hook_runtime.call_first(
-            "build_prompt", message=inbound, session_id=session_id, state=state
-        )
-        if not prompt:
-            from bub.envelope import content_of
-
-            prompt = content_of(inbound)
-
-        # Get the raw stream
-        raw_stream = await framework._hook_runtime.run_model_stream(
-            prompt=prompt, session_id=session_id, state=state
-        )
-
-        async def _iterate() -> AsyncIterator[Any]:
-            if raw_stream is None:
-                # Fallback: non-streaming model
-                output = await framework._hook_runtime.run_model(
-                    prompt=prompt, session_id=session_id, state=state
-                )
-                if output:
-                    yield StreamEvent(kind="text", data={"delta": output})
-                yield StreamEvent(kind="final", data={"text": output or "", "ok": True})
-                return
-
-            async for event in raw_stream:
-                yield event
-
-        return _iterate()

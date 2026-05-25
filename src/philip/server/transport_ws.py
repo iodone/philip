@@ -36,7 +36,6 @@ async def handle_ws(request: web.Request, service: Service) -> web.WebSocketResp
                 result = await service.dispatch(parsed)
 
                 if isinstance(result, StreamHandle):
-                    # Wire up the request id
                     result = StreamHandle(
                         session_id=result.session_id,
                         request_id=parsed.id,
@@ -60,13 +59,29 @@ async def handle_ws(request: web.Request, service: Service) -> web.WebSocketResp
 
 
 async def _stream_to_ws(ws: web.WebSocketResponse, handle: StreamHandle) -> None:
-    """Push stream events as JSON-RPC notifications, then a final response."""
+    """Push stream events as JSON-RPC notifications, then a final response.
+
+    Event mapping from Republic StreamEvent:
+      text       → chat.stream.event { event: "token", delta }
+      tool_call  → chat.stream.event { event: "tool_call", name, args }
+      tool_result→ chat.stream.event { event: "tool_result", name, result }
+      error      → chat.stream.event { event: "error", message }
+      final      → (consumed for text fallback, not emitted as notification)
+    """
     accumulated_text: list[str] = []
+    final_text: str | None = None
 
     try:
         async for event in handle.events:
             kind = event.kind if hasattr(event, "kind") else event.get("kind", "")
             data = event.data if hasattr(event, "data") else event.get("data", {})
+
+            # Internal sentinel: turn completed, extract result
+            if kind == "__turn_result__":
+                turn_result = data.get("result")
+                if turn_result and hasattr(turn_result, "model_output") and final_text is None:
+                    final_text = turn_result.model_output
+                continue
 
             if kind == "text":
                 delta = str(data.get("delta", ""))
@@ -113,11 +128,17 @@ async def _stream_to_ws(ws: web.WebSocketResponse, handle: StreamHandle) -> None
                     },
                 })
             elif kind == "final":
-                pass  # handled below
+                # Capture final.text as fallback if accumulated text is empty
+                final_event_text = data.get("text")
+                if final_event_text and not accumulated_text:
+                    final_text = str(final_event_text)
             # usage and other events: skip for now
 
-        # Send final response with the accumulated result
-        full_text = "".join(accumulated_text)
+        # Determine best final text: prefer accumulated deltas,
+        # fall back to final event text, then turn result text
+        full_text = "".join(accumulated_text) or final_text or ""
+
+        # Send done notification
         await ws.send_json({
             "jsonrpc": "2.0",
             "method": "chat.stream.event",
@@ -128,7 +149,7 @@ async def _stream_to_ws(ws: web.WebSocketResponse, handle: StreamHandle) -> None
             },
         })
 
-        # Also send the JSON-RPC success response (matches the original request id)
+        # Send JSON-RPC success response (matches the original request id)
         await ws.send_json({
             "jsonrpc": "2.0",
             "result": {
