@@ -1,10 +1,11 @@
-"""Philip Bub plugin — vision tool and image-state injection."""
+"""Philip Bub plugin — vision tool, image-state injection, and JSON-RPC channel."""
 
 from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import Any
 
+from bub.channels.base import Channel
 from bub.envelope import content_of, field_of
 from bub.framework import BubFramework
 from bub.hookspecs import hookimpl
@@ -58,6 +59,12 @@ class PhilipPlugin:
             "inbound message and returns a concise textual observation.\n"
             "</vision_tool_hint>"
         )
+
+    @hookimpl
+    def provide_channels(self, message_handler: Any) -> list[Channel]:
+        from philip.channels.jsonrpc_channel import JsonRpcChannel
+
+        return [JsonRpcChannel(on_receive=message_handler)]
 
 
 def _image_media(message: Any) -> list[dict[str, Any]]:
