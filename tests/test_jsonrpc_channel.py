@@ -114,9 +114,35 @@ class TestChannelInterface:
         channel, _ = _make_channel()
         assert channel.name == "jsonrpc"
 
-    def test_enabled(self) -> None:
+    def test_enabled_with_enable_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("BUB_JSONRPC_ENABLE", "true")
+        monkeypatch.delenv("BUB_JSONRPC_ENABLED", raising=False)
         channel, _ = _make_channel()
         assert channel.enabled is True
+
+    def test_enabled_with_enabled_env_alias(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("BUB_JSONRPC_ENABLED", "true")
+        monkeypatch.delenv("BUB_JSONRPC_ENABLE", raising=False)
+        channel, _ = _make_channel()
+        assert channel.enabled is True
+
+    def test_enabled_with_env_1(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("BUB_JSONRPC_ENABLE", "1")
+        monkeypatch.delenv("BUB_JSONRPC_ENABLED", raising=False)
+        channel, _ = _make_channel()
+        assert channel.enabled is True
+
+    def test_disabled_without_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("BUB_JSONRPC_ENABLE", raising=False)
+        monkeypatch.delenv("BUB_JSONRPC_ENABLED", raising=False)
+        channel, _ = _make_channel()
+        assert channel.enabled is False
+
+    def test_disabled_with_empty_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("BUB_JSONRPC_ENABLE", "")
+        monkeypatch.delenv("BUB_JSONRPC_ENABLED", raising=False)
+        channel, _ = _make_channel()
+        assert channel.enabled is False
 
     def test_needs_debounce(self) -> None:
         channel, _ = _make_channel()

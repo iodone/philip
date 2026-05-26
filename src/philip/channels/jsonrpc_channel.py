@@ -14,6 +14,7 @@ Request/response correlation:
 from __future__ import annotations
 
 import asyncio
+import os
 from collections import deque
 from collections.abc import AsyncIterable, AsyncIterator
 from typing import Any
@@ -44,15 +45,19 @@ class JsonRpcChannel(Channel):
 
     name = "jsonrpc"
 
+    @property
+    def enabled(self) -> bool:
+        return _env_flag("BUB_JSONRPC_ENABLE") or _env_flag("BUB_JSONRPC_ENABLED")
+
     def __init__(
         self,
         on_receive: Any,
-        host: str = "127.0.0.1",
-        port: int = 8420,
+        host: str | None = None,
+        port: int | None = None,
     ) -> None:
         self._on_receive = on_receive
-        self._host = host
-        self._port = port
+        self._host = host or os.environ.get("BUB_JSONRPC_HOST", "127.0.0.1")
+        self._port = port or int(os.environ.get("BUB_JSONRPC_PORT", "8420"))
         self._app: web.Application | None = None
         self._runner: web.AppRunner | None = None
         self._site: web.TCPSite | None = None
@@ -421,3 +426,8 @@ class JsonRpcChannel(Channel):
                 break
         if not pending_deque:
             del self._pending[session_id]
+
+
+def _env_flag(name: str) -> bool:
+    value = os.environ.get(name, "").strip().lower()
+    return value in {"1", "true", "yes", "on"}
