@@ -272,8 +272,8 @@ dependencies = [
 
 [[package]]
 name = "bub-im-bridge"
-version = "0.6.3"
-source = { git = "https://github.com/iodone/bub-im-bridge.git?tag=v0.6.3#18da8ff46a5718d27e0bb4beab02eef8b089d9da" }
+version = "0.6.4"
+source = { git = "https://github.com/iodone/bub-im-bridge.git?tag=v0.6.4#91eefe6a18aeb24239cd37a5fc01c9da721a882a" }
 dependencies = [
     { name = "bub" },
     { name = "lark-oapi" },
@@ -1229,7 +1229,7 @@ dev = [
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.9" },
     { name = "bub", marker = "extra == 'gateway'", git = "https://github.com/bubbuild/bub.git?branch=main" },
-    { name = "bub-im-bridge", marker = "extra == 'gateway'", git = "https://github.com/iodone/bub-im-bridge.git?tag=v0.6.3" },
+    { name = "bub-im-bridge", marker = "extra == 'gateway'", git = "https://github.com/iodone/bub-im-bridge.git?tag=v0.6.4" },
     { name = "bub-schedule", marker = "extra == 'gateway'", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&branch=main" },
     { name = "bub-web-search", marker = "extra == 'gateway'", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&branch=main" },
     { name = "click", specifier = ">=8.0" },
