@@ -129,7 +129,13 @@ docker-compose up -d
 
 ### 3. 验证 JSON-RPC Channel
 
-JSON-RPC 通道不是单独启动的服务，而是 **Bub gateway 自动加载的 channel 插件**。统一入口是：
+JSON-RPC 通道不是单独启动的服务，而是 **Bub gateway 自动加载的 channel 插件**。要启用它，先打开环境变量开关：
+
+```bash
+export BUB_JSONRPC_ENABLE=true
+```
+
+然后统一通过 gateway 启动：
 
 ```bash
 uv run bub -w /path/to/workspace gateway
@@ -186,6 +192,11 @@ JSON-RPC 通道作为 Bub gateway 插件自动加载，支持 HTTP (`POST /rpc`)
 - JSON-RPC 顶层 `id` 只做单次 request correlation
 - 同一个 `session_id` 支持并发 unary `chat.send`
 - 同一个 `session_id` 的并发 `chat.stream` 会被显式拒绝，避免隐式覆盖
+
+启用开关：
+
+- `BUB_JSONRPC_ENABLE=true`：启用 JSON-RPC channel
+- 兼容别名：`BUB_JSONRPC_ENABLED=true`
 
 ```bash
 # 快速测试
