@@ -66,9 +66,9 @@ BUB_WORKSPACE="$(expand_path "${BUB_WORKSPACE:?BUB_WORKSPACE not set}")"
 BUB_SKILLS="$(expand_path "${BUB_SKILLS:-$HOME/.agents/skills}")"
 BUB_WEIXIN_DATA="$(expand_path "${BUB_WEIXIN_DATA:-$HOME/.openclaw/openclaw-weixin}")"
 BUB_FEISHU_HOME="$(expand_path "${BUB_FEISHU_HOME:-$HOME/.feishu}")"
-# BUB_HOME is always $HOME/.bub — bub resolves its state directory via ~.
-# Not configurable: changing it would require also changing bub's own path resolution.
-BUB_HOME="$HOME/.bub"
+# BUB_HOME defaults to ~/.bub but can be overridden from .env to isolate
+# host-mode state from other Bub instances or worktrees.
+BUB_HOME="$(expand_path "${BUB_HOME:-$HOME/.bub}")"
 
 # Ensure required directories exist
 mkdir -p "$BUB_WORKSPACE/profiles"
