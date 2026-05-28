@@ -28,7 +28,7 @@ bub = { git = "https://github.com/bubbuild/bub.git", branch = "main" }
 bub-im-bridge = { git = "https://github.com/iodone/bub-im-bridge.git", tag = "v0.7.0" }
 bub-web-search = { git = "https://github.com/bubbuild/bub-contrib.git", branch = "main", subdirectory = "packages/bub-web-search" }
 bub-schedule = { git = "https://github.com/bubbuild/bub-contrib.git", branch = "main", subdirectory = "packages/bub-schedule" }
-mi-rub = { path = "../rubick", editable = true }
+mi-rub = { git = "https://github.com/iodone/rubick.git", branch = "main" }
 
 [dependency-groups]
 dev = [
