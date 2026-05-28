@@ -1003,42 +1003,6 @@ wheels = [
 ]
 
 [[package]]
-name = "mi-rub"
-source = { editable = "../rubick" }
-dependencies = [
-    { name = "aiosqlite" },
-    { name = "httpx" },
-    { name = "loguru" },
-    { name = "pluggy" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "rich" },
-    { name = "typer" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "aiosqlite", specifier = ">=0.19" },
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "loguru", specifier = ">=0.7.2" },
-    { name = "pluggy", specifier = ">=1.3" },
-    { name = "pydantic", specifier = ">=2.0" },
-    { name = "pydantic-settings", specifier = ">=2.0" },
-    { name = "rich", specifier = ">=13.0" },
-    { name = "typer", specifier = ">=0.9" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "black", specifier = ">=24.0" },
-    { name = "mypy", specifier = ">=1.10" },
-    { name = "pytest", specifier = ">=8.0" },
-    { name = "pytest-asyncio", specifier = ">=0.23" },
-    { name = "pytest-cov", specifier = ">=5.0" },
-    { name = "ruff", specifier = ">=0.4" },
-]
-
-[[package]]
 name = "multidict"
 version = "6.7.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1244,20 +1208,14 @@ version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
-    { name = "mi-rub" },
-    { name = "python-frontmatter" },
-    { name = "toml" },
-]
-
-[package.optional-dependencies]
-db9 = [
-    { name = "psycopg2-binary" },
-]
-gateway = [
     { name = "bub" },
     { name = "bub-im-bridge" },
     { name = "bub-schedule" },
     { name = "bub-web-search" },
+    { name = "psycopg2-binary" },
+    { name = "python-frontmatter" },
+    { name = "rub" },
+    { name = "toml" },
 ]
 
 [package.dev-dependencies]
@@ -1273,16 +1231,15 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.9" },
-    { name = "bub", marker = "extra == 'gateway'", git = "https://github.com/bubbuild/bub.git?branch=main" },
-    { name = "bub-im-bridge", marker = "extra == 'gateway'", git = "https://github.com/iodone/bub-im-bridge.git?tag=v0.7.0" },
-    { name = "bub-schedule", marker = "extra == 'gateway'", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&branch=main" },
-    { name = "bub-web-search", marker = "extra == 'gateway'", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&branch=main" },
-    { name = "mi-rub", editable = "../rubick" },
-    { name = "psycopg2-binary", marker = "extra == 'db9'", specifier = ">=2.9" },
+    { name = "bub", git = "https://github.com/bubbuild/bub.git?branch=main" },
+    { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?tag=v0.7.0" },
+    { name = "bub-schedule", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&branch=main" },
+    { name = "bub-web-search", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&branch=main" },
+    { name = "psycopg2-binary", specifier = ">=2.9" },
     { name = "python-frontmatter", specifier = ">=1.0" },
+    { name = "rub", git = "https://github.com/iodone/rubick.git?branch=main" },
     { name = "toml", specifier = ">=0.10" },
 ]
-provides-extras = ["gateway", "db9"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1881,6 +1838,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c0/8f/0722ca900cc807c13a6a0c696dacf35430f72e0ec571c4275d2371fca3e9/rich-15.0.0.tar.gz", hash = "sha256:edd07a4824c6b40189fb7ac9bc4c52536e9780fbbfbddf6f1e2502c31b068c36", size = 230680, upload-time = "2026-04-12T08:24:00.75Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/82/3b/64d4899d73f91ba49a8c18a8ff3f0ea8f1c1d75481760df8c68ef5235bf5/rich-15.0.0-py3-none-any.whl", hash = "sha256:33bd4ef74232fb73fe9279a257718407f169c09b78a87ad3d296f548e27de0bb", size = 310654, upload-time = "2026-04-12T08:24:02.83Z" },
+]
+
+[[package]]
+name = "rub"
+version = "1.0.0"
+source = { git = "https://github.com/iodone/rubick.git?branch=main#5c83c62d71b9c17fc35b4eb942ad3be20353aea6" }
+dependencies = [
+    { name = "aiosqlite" },
+    { name = "httpx" },
+    { name = "loguru" },
+    { name = "pluggy" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "rich" },
+    { name = "typer" },
 ]
 
 [[package]]

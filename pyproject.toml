@@ -6,19 +6,15 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "aiohttp>=3.9",
-    "rub",
-    "python-frontmatter>=1.0",
-    "toml>=0.10",
-]
-
-[project.optional-dependencies]
-gateway = [
     "bub",
     "bub-im-bridge",
     "bub-web-search",
     "bub-schedule",
+    "psycopg2-binary>=2.9",
+    "python-frontmatter>=1.0",
+    "rub",
+    "toml>=0.10",
 ]
-db9 = ["psycopg2-binary>=2.9"]
 
 [project.scripts]
 philip = "philip.cli.__main__:app"
