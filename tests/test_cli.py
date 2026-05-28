@@ -22,11 +22,11 @@ def test_cli_discover():
     assert result.exit_code == 0
     assert "wiki.search" in result.output
     assert "wiki.init" in result.output
-    assert "chat" in result.output
+    assert "rpc.chat" in result.output
 
 
 def test_chat_inspect():
-    result = _invoke("chat", "-h")
+    result = _invoke("rpc.chat", "-h")
     assert result.exit_code == 0
     assert "chat" in result.output.lower()
 

@@ -17,7 +17,7 @@ from rub.schema import Operation, OperationDetail, Parameter
 
 OPERATIONS: list[Operation] = [
     Operation(
-        operation_id="chat",
+        operation_id="rpc.chat",
         display_name="Chat",
         description="Interactive JSON-RPC REPL for local testing",
         parameters=[
@@ -55,8 +55,8 @@ OPERATIONS: list[Operation] = [
 ]
 
 DETAILS: dict[str, OperationDetail] = {
-    "chat": OperationDetail(
-        operation_id="chat",
+    "rpc.chat": OperationDetail(
+        operation_id="rpc.chat",
         display_name="Chat",
         description=(
             "Interactive JSON-RPC REPL for local testing."
@@ -65,9 +65,9 @@ DETAILS: dict[str, OperationDetail] = {
         parameters=OPERATIONS[0].parameters,
         return_type="interactive",
         invocation_examples=[
-            "philip chat",
-            "philip chat ws=true stream=true",
-            "philip chat url=http://localhost:9000/rpc session=my-session",
+            "philip rpc.chat",
+            "philip rpc.chat ws=true stream=true",
+            "philip rpc.chat url=http://localhost:9000/rpc session=my-session",
         ],
     ),
 }

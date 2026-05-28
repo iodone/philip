@@ -18,14 +18,14 @@ runner = CliRunner()
 
 class TestChatCommandRegistered:
     def test_chat_inspect(self) -> None:
-        result = runner.invoke(app, ["chat", "-h"])
+        result = runner.invoke(app, ["rpc.chat", "-h"])
         assert result.exit_code == 0
         assert "chat" in result.output.lower()
 
     def test_chat_discover(self) -> None:
         result = runner.invoke(app, ["-h"])
         assert result.exit_code == 0
-        assert "chat" in result.output
+        assert "rpc.chat" in result.output
 
 
 # ─── HTTP Client Flow ────────────────────────────────────────────

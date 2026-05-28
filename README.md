@@ -17,7 +17,7 @@ philip/
 │       │   └── wiki/           # 知识库管理
 │       ├── channels/           # Bub Channel 插件
 │       │   └── jsonrpc_channel.py  # JSON-RPC 2.0 通道
-│       ├── cli/                # CLI 入口（click）
+│       ├── cli/                # CLI 入口（rub standalone_cli）
 │       ├── plugins/            # Bub 插件
 │       ├── server/             # JSON-RPC 服务端实现
 │       └── skills/             # 内置 agent skill
@@ -31,7 +31,7 @@ philip/
 ├── docker-compose.yml          # Docker 模式编排
 ├── Dockerfile                  # 容器镜像定义
 ├── .env.example                # 配置模板
-├── pyproject.toml              # Python 依赖（含推荐插件）
+├── pyproject.toml              # Python 依赖
 └── AGENTS.md                   # Agent 运行规则
 ```
 
@@ -48,30 +48,28 @@ pipx install git+https://github.com/iodone/philip.git
 安装后即可在任意目录使用：
 
 ```bash
-philip wiki init /path/to/workspace
-philip wiki search "agent architecture"
-philip wiki sync
-philip rpc chat --help
+philip wiki.init directory=/path/to/workspace
+philip wiki.search query="agent architecture"
+philip wiki.sync
+philip rpc.chat -h
 ```
 
-### Bub 网关 / 从源码开发
-
-Bub distribution 需要从源码运行（gateway 依赖不在 PyPI）：
+### 从源码开发
 
 ```bash
 git clone https://github.com/iodone/philip.git
 cd philip
-uv sync --extra gateway
+uv sync
 ```
 
 ## 快速开始
 
 ### 1. 初始化 Wiki Workspace
 
-使用 `philip wiki init` 初始化一个 workspace。创建完整目录结构、模板文件，并自动将内置 skill 安装到 `.agents/skills/`：
+使用 `philip wiki.init` 初始化一个 workspace。创建完整目录结构、模板文件，并自动将内置 skill 安装到 `.agents/skills/`：
 
 ```bash
-philip wiki init /path/to/workspace
+philip wiki.init directory=/path/to/workspace
 ```
 
 初始化后的 workspace 结构：
@@ -125,7 +123,7 @@ uv run bub -w /path/to/workspace gateway
 docker-compose up -d
 ```
 
-启动后，agent 会自动读取 workspace 中的 wiki skill，通过 `philip wiki search/graph/sync` 等命令管理知识库。
+启动后，agent 会自动读取 workspace 中的 wiki skill，通过 `philip wiki.search`/`wiki.graph`/`wiki.sync` 等命令管理知识库。
 
 ### 3. 验证 JSON-RPC Channel
 
@@ -149,15 +147,15 @@ uv run bub -w /path/to/workspace gateway
 从源码仓库内联调时，推荐直接使用 repo 环境里的 CLI：
 
 ```bash
-uv run philip rpc chat
-uv run philip rpc chat --ws --stream
-uv run philip rpc chat --session demo-session
+uv run philip rpc.chat
+uv run philip rpc.chat ws=true stream=true
+uv run philip rpc.chat session=demo-session
 ```
 
 如果你已经通过 `pipx` 安装了最新 CLI，也可以直接使用：
 
 ```bash
-philip rpc chat
+philip rpc.chat
 ```
 
 ## CLI Capabilities
@@ -166,12 +164,11 @@ philip rpc chat
 
 | 命令 | 说明 |
 |:---|:---|
-| `philip wiki init <dir>` | 初始化 workspace（目录结构 + 模板 + skill） |
-| `philip wiki search <query>` | BM25 搜索（配置 DB9 后自动启用向量 + RRF 融合） |
-| `philip wiki sync` | 变更检测（mtime + SHA-256），可选推送到 DB9 |
-| `philip wiki graph` | 链接图分析：社区发现、hub 页、orphan 页、wanted 页 |
-| `philip wiki status` | wiki 健康概览 |
-| `philip wiki skill` | 管理 AI agent skill |
+| `philip wiki.init <dir>` | 初始化 workspace（目录结构 + 模板 + skill） |
+| `philip wiki.search <query>` | BM25 搜索（配置 DB9 后自动启用向量 + RRF 融合） |
+| `philip wiki.sync` | 变更检测（mtime + SHA-256），可选推送到 DB9 |
+| `philip wiki.graph` | 链接图分析：社区发现、hub 页、orphan 页、wanted 页 |
+| `philip wiki.status` | wiki 健康概览 |
 
 详细用法见 [docs/WIKI.md](docs/WIKI.md)。
 
@@ -179,10 +176,10 @@ philip rpc chat
 
 | 命令 | 说明 |
 |:---|:---|
-| `philip rpc chat` | 交互式 REPL 客户端（HTTP 模式） |
-| `philip rpc chat --ws` | WebSocket 模式 |
-| `philip rpc chat --ws --stream` | 流式输出模式 |
-| `philip rpc chat --session <id>` | 指定 session ID |
+| `philip rpc.chat` | 交互式 REPL 客户端（HTTP 模式） |
+| `philip rpc.chat ws=true` | WebSocket 模式 |
+| `philip rpc.chat ws=true stream=true` | 流式输出模式 |
+| `philip rpc.chat session=<id>` | 指定 session ID |
 
 JSON-RPC 通道作为 Bub gateway 插件自动加载，支持 HTTP (`POST /rpc`) 和 WebSocket (`GET /ws`) 两种传输方式。适合本地调试、CLI 交互和外部系统集成。
 
