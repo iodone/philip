@@ -645,7 +645,8 @@ class TestSessionStore:
 
 class TestCliServe:
     def test_serve_command_removed_from_cli(self) -> None:
-        """philip rpc serve is removed — use `bub gateway` instead."""
-        from philip.cli.commands.rpc import rpc as rpc_group
+        """philip serve is removed — use `bub gateway` instead."""
+        from philip.cli.adapter import _ALL_OPERATIONS
 
-        assert "serve" not in rpc_group.commands
+        op_ids = {op.operation_id for op in _ALL_OPERATIONS}
+        assert "serve" not in op_ids
