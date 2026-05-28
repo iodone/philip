@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "aiohttp>=3.9",
-    "click>=8.0",
+    "mi-rub",
     "python-frontmatter>=1.0",
     "toml>=0.10",
 ]
@@ -21,13 +21,14 @@ gateway = [
 db9 = ["psycopg2-binary>=2.9"]
 
 [project.scripts]
-philip = "philip.cli.main:main"
+philip = "philip.cli.__main__:app"
 
 [tool.uv.sources]
 bub = { git = "https://github.com/bubbuild/bub.git", branch = "main" }
 bub-im-bridge = { git = "https://github.com/iodone/bub-im-bridge.git", tag = "v0.7.0" }
 bub-web-search = { git = "https://github.com/bubbuild/bub-contrib.git", branch = "main", subdirectory = "packages/bub-web-search" }
 bub-schedule = { git = "https://github.com/bubbuild/bub-contrib.git", branch = "main", subdirectory = "packages/bub-schedule" }
+mi-rub = { path = "../rubick", editable = true }
 
 [dependency-groups]
 dev = [
@@ -45,6 +46,9 @@ build-backend = "hatchling.build"
 
 [project.entry-points.bub]
 philip = "philip.plugins.plugin:PhilipPlugin"
+
+[project.entry-points.'rub.adapters']
+philip = "philip.cli.adapter:PhilipAdapter"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/philip"]

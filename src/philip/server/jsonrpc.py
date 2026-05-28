@@ -70,7 +70,7 @@ def parse_request(raw: bytes) -> JsonRpcRequest | JsonRpcError:
     if version != JSONRPC_VERSION:
         return JsonRpcError(
             code=INVALID_REQUEST,
-            message=f"jsonrpc must be \"{JSONRPC_VERSION}\"",
+            message=f'jsonrpc must be "{JSONRPC_VERSION}"',
             id=body.get("id"),
         )
 

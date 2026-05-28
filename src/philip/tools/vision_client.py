@@ -24,7 +24,7 @@ class VisionClient:
         image_urls: list[str],
         focus: str | None = None,
     ) -> str:
-        """Send images to the vision model and return a compressed textual observation."""
+        """Send images to vision model, return compressed text."""
         prompt = (
             "Read the attached images and return one concise natural-language "
             "observation block. Prefer visible text, UI state, errors, tables, "

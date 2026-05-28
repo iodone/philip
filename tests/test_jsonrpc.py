@@ -4,11 +4,8 @@ from __future__ import annotations
 
 import json
 
-import pytest
-
 from philip.server.jsonrpc import (
     INVALID_REQUEST,
-    MISSING_SESSION_ID,
     METHOD_NOT_FOUND,
     PARSE_ERROR,
     JsonRpcError,
@@ -21,12 +18,14 @@ from philip.server.jsonrpc import (
 
 class TestParseRequest:
     def test_valid_request(self) -> None:
-        raw = json.dumps({
-            "jsonrpc": "2.0",
-            "id": "req-001",
-            "method": "chat.ping",
-            "params": {},
-        }).encode()
+        raw = json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "id": "req-001",
+                "method": "chat.ping",
+                "params": {},
+            }
+        ).encode()
         result = parse_request(raw)
         assert isinstance(result, JsonRpcRequest)
         assert result.method == "chat.ping"
@@ -34,21 +33,25 @@ class TestParseRequest:
         assert result.params == {}
 
     def test_valid_request_no_id(self) -> None:
-        raw = json.dumps({
-            "jsonrpc": "2.0",
-            "method": "chat.ping",
-        }).encode()
+        raw = json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "method": "chat.ping",
+            }
+        ).encode()
         result = parse_request(raw)
         assert isinstance(result, JsonRpcRequest)
         assert result.id is None
         assert result.params == {}
 
     def test_valid_request_integer_id(self) -> None:
-        raw = json.dumps({
-            "jsonrpc": "2.0",
-            "id": 42,
-            "method": "chat.ping",
-        }).encode()
+        raw = json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "id": 42,
+                "method": "chat.ping",
+            }
+        ).encode()
         result = parse_request(raw)
         assert isinstance(result, JsonRpcRequest)
         assert result.id == 42
@@ -65,49 +68,59 @@ class TestParseRequest:
         assert result.code == INVALID_REQUEST
 
     def test_invalid_request_wrong_version(self) -> None:
-        raw = json.dumps({
-            "jsonrpc": "1.0",
-            "method": "chat.ping",
-        }).encode()
+        raw = json.dumps(
+            {
+                "jsonrpc": "1.0",
+                "method": "chat.ping",
+            }
+        ).encode()
         result = parse_request(raw)
         assert isinstance(result, JsonRpcError)
         assert result.code == INVALID_REQUEST
         assert "2.0" in result.message
 
     def test_invalid_request_missing_method(self) -> None:
-        raw = json.dumps({
-            "jsonrpc": "2.0",
-            "params": {},
-        }).encode()
+        raw = json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "params": {},
+            }
+        ).encode()
         result = parse_request(raw)
         assert isinstance(result, JsonRpcError)
         assert result.code == INVALID_REQUEST
 
     def test_invalid_request_empty_method(self) -> None:
-        raw = json.dumps({
-            "jsonrpc": "2.0",
-            "method": "",
-        }).encode()
+        raw = json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "method": "",
+            }
+        ).encode()
         result = parse_request(raw)
         assert isinstance(result, JsonRpcError)
         assert result.code == INVALID_REQUEST
 
     def test_invalid_request_params_not_object(self) -> None:
-        raw = json.dumps({
-            "jsonrpc": "2.0",
-            "method": "chat.ping",
-            "params": "bad",
-        }).encode()
+        raw = json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "method": "chat.ping",
+                "params": "bad",
+            }
+        ).encode()
         result = parse_request(raw)
         assert isinstance(result, JsonRpcError)
         assert result.code == INVALID_REQUEST
 
     def test_null_params_treated_as_empty(self) -> None:
-        raw = json.dumps({
-            "jsonrpc": "2.0",
-            "method": "chat.ping",
-            "params": None,
-        }).encode()
+        raw = json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "method": "chat.ping",
+                "params": None,
+            }
+        ).encode()
         result = parse_request(raw)
         assert isinstance(result, JsonRpcRequest)
         assert result.params == {}

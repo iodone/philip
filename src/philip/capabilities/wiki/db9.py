@@ -13,15 +13,16 @@ from typing import Any
 from philip.capabilities.wiki.config import WikiConfig
 from philip.capabilities.wiki.wiki import WikiPage
 
-
 # ---------------------------------------------------------------------------
 # Lazy import for psycopg2
 # ---------------------------------------------------------------------------
+
 
 def _load_psycopg2() -> Any:
     """Import psycopg2 at runtime (optional dependency)."""
     try:
         import psycopg2
+
         return psycopg2
     except ModuleNotFoundError:
         raise RuntimeError(
@@ -34,6 +35,7 @@ def _load_psycopg2() -> Any:
 # Data models
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class DB9SearchResult:
     slug: str
@@ -44,6 +46,7 @@ class DB9SearchResult:
 # ---------------------------------------------------------------------------
 # DB9 Client
 # ---------------------------------------------------------------------------
+
 
 class DB9Client:
     """PostgreSQL + pgvector client for wiki index management.
@@ -113,8 +116,11 @@ class DB9Client:
 
         cur.execute(
             """
-            INSERT INTO wiki_index (slug, title, description, content, tags, contexts, content_hash, updated, embedding)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, embedding(%s)::vector(1024))
+            INSERT INTO wiki_index
+                (slug, title, description, content, tags,
+                 contexts, content_hash, updated, embedding)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s,
+                    embedding(%s)::vector(1024))
             ON CONFLICT (slug) DO UPDATE SET
                 title = EXCLUDED.title,
                 description = EXCLUDED.description,
@@ -142,7 +148,9 @@ class DB9Client:
         cur.execute("DELETE FROM wiki_page_contexts WHERE slug = %s", (page.slug,))
         for ctx in page.contexts:
             cur.execute(
-                "INSERT INTO wiki_page_contexts (slug, context_path) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                "INSERT INTO wiki_page_contexts"
+                " (slug, context_path)"
+                " VALUES (%s, %s) ON CONFLICT DO NOTHING",
                 (page.slug, ctx),
             )
         conn.commit()
@@ -221,6 +229,7 @@ class DB9Client:
 # ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
+
 
 def create_db9_client(config: WikiConfig) -> DB9Client | None:
     """Create a DB9 client from config, or None if not configured."""

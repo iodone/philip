@@ -19,9 +19,7 @@ def list_skills(skills_dir: str | Path | None = None) -> list[str]:
     if not sd.exists():
         return []
     return sorted(
-        d.name
-        for d in sd.iterdir()
-        if d.is_dir() and (d / "SKILL.md").exists()
+        d.name for d in sd.iterdir() if d.is_dir() and (d / "SKILL.md").exists()
     )
 
 

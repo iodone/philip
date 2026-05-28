@@ -13,10 +13,7 @@ from philip.capabilities.wiki.wiki import WikiPage
 # ---------------------------------------------------------------------------
 
 # Unicode ranges for CJK characters (unified + extension + compat + kana + hangul)
-_CJK_RE = re.compile(
-    r"[一-鿿㐀-䶿豈-﫿"
-    r"　-〿぀-ゟ゠-ヿ가-힯]"
-)
+_CJK_RE = re.compile(r"[一-鿿㐀-䶿豈-﫿" r"　-〿぀-ゟ゠-ヿ가-힯]")
 
 
 def tokenize(text: str) -> list[str]:
@@ -58,11 +55,11 @@ _B = 0.75
 
 @dataclass
 class _BM25Index:
-    df: dict[str, int]          # document frequency per token
-    tf: list[dict[str, int]]    # term frequency per document
-    doc_lengths: list[int]      # token count per document
-    avg_dl: float               # average document length
-    n: int                      # total documents
+    df: dict[str, int]  # document frequency per token
+    tf: list[dict[str, int]]  # term frequency per document
+    doc_lengths: list[int]  # token count per document
+    avg_dl: float  # average document length
+    n: int  # total documents
 
 
 def _build_index(pages: list[WikiPage]) -> _BM25Index:
@@ -113,6 +110,7 @@ def _score_bm25(index: _BM25Index, query_tokens: list[str], doc_idx: int) -> flo
 # Search API
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class SearchResult:
     page: WikiPage
@@ -144,6 +142,7 @@ def bm25_search(
 # ---------------------------------------------------------------------------
 # Reciprocal Rank Fusion
 # ---------------------------------------------------------------------------
+
 
 def rrf_merge(
     bm25_results: list[dict[str, float]],

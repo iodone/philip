@@ -64,7 +64,9 @@ class JsonRpcChannel(Channel):
         # session_id → deque of (request_id, Future) for HTTP/WS unary
         self._pending: dict[str, deque[tuple[str, asyncio.Future[dict[str, Any]]]]] = {}
         # session_id → (request_id, Queue) for WS stream
-        self._stream_queues: dict[str, tuple[str, asyncio.Queue[StreamEvent | None]]] = {}
+        self._stream_queues: dict[
+            str, tuple[str, asyncio.Queue[StreamEvent | None]]
+        ] = {}
 
     # ── Channel lifecycle ──────────────────────────────────────────
 
@@ -78,9 +80,7 @@ class JsonRpcChannel(Channel):
         await self._runner.setup()
         self._site = web.TCPSite(self._runner, self._host, self._port)
         await self._site.start()
-        logger.info(
-            "JsonRpcChannel started on http://{}:{}", self._host, self._port
-        )
+        logger.info("JsonRpcChannel started on http://{}:{}", self._host, self._port)
 
     async def stop(self) -> None:
         if self._site:
@@ -98,11 +98,16 @@ class JsonRpcChannel(Channel):
         if pending_deque and len(pending_deque) > 0:
             request_id, future = pending_deque.popleft()
             if not future.done():
-                future.set_result(success_response(request_id, {
-                    "session_id": session_id,
-                    "text": message.content,
-                    "status": "completed",
-                }))
+                future.set_result(
+                    success_response(
+                        request_id,
+                        {
+                            "session_id": session_id,
+                            "text": message.content,
+                            "status": "completed",
+                        },
+                    )
+                )
             if not pending_deque:
                 del self._pending[session_id]
 
@@ -139,7 +144,8 @@ class JsonRpcChannel(Channel):
         if content_type not in ("application/json", "application/json-rpc"):
             return web.json_response(
                 error_response(
-                    None, INVALID_REQUEST,
+                    None,
+                    INVALID_REQUEST,
                     f"Content-Type must be application/json, got: {content_type}",
                 ),
                 status=415,
@@ -168,7 +174,8 @@ class JsonRpcChannel(Channel):
         if not session_id or not isinstance(session_id, str):
             return web.json_response(
                 error_response(
-                    request_id, -32000,
+                    request_id,
+                    -32000,
                     "params.session_id is required and must be a non-empty string",
                 ),
                 status=400,
@@ -176,17 +183,21 @@ class JsonRpcChannel(Channel):
 
         if parsed.method == "session.get":
             return web.json_response(
-                success_response(request_id, {
-                    "session_id": session_id,
-                    "note": "session state lives in Bub tape, not in channel",
-                })
+                success_response(
+                    request_id,
+                    {
+                        "session_id": session_id,
+                        "note": "session state lives in Bub tape, not in channel",
+                    },
+                )
             )
 
         # Reject streaming over HTTP
         if parsed.method == "chat.stream":
             return web.json_response(
                 error_response(
-                    request_id, -32001,
+                    request_id,
+                    -32001,
                     "chat.stream requires WebSocket. Connect to /ws instead.",
                 ),
                 status=400,
@@ -195,7 +206,9 @@ class JsonRpcChannel(Channel):
         # chat.send: feed to Bub via on_receive, wait for response
         if parsed.method == "chat.send":
             message = parsed.params.get("message", "")
-            future: asyncio.Future[dict[str, Any]] = asyncio.get_event_loop().create_future()
+            future: asyncio.Future[dict[str, Any]] = (
+                asyncio.get_event_loop().create_future()
+            )
             pending_deque = self._pending.setdefault(session_id, deque())
             pending_deque.append((request_id, future))
 
@@ -210,7 +223,7 @@ class JsonRpcChannel(Channel):
             try:
                 result = await asyncio.wait_for(future, timeout=300)
                 return web.json_response(result)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # Remove the timed-out request from the deque
                 self._remove_pending(session_id, request_id)
                 return web.json_response(
@@ -245,7 +258,8 @@ class JsonRpcChannel(Channel):
                 ):
                     await ws.send_json(
                         error_response(
-                            request_id, -32000,
+                            request_id,
+                            -32000,
                             "params.session_id is required",
                         )
                     )
@@ -256,10 +270,15 @@ class JsonRpcChannel(Channel):
                     continue
 
                 if parsed.method == "session.get":
-                    await ws.send_json(success_response(request_id, {
-                        "session_id": session_id,
-                        "note": "session state lives in Bub tape",
-                    }))
+                    await ws.send_json(
+                        success_response(
+                            request_id,
+                            {
+                                "session_id": session_id,
+                                "note": "session state lives in Bub tape",
+                            },
+                        )
+                    )
                     continue
 
                 if parsed.method == "chat.stream":
@@ -271,7 +290,9 @@ class JsonRpcChannel(Channel):
                     continue
 
                 await ws.send_json(
-                    error_response(request_id, -32601, f"Method not found: {parsed.method}")
+                    error_response(
+                        request_id, -32601, f"Method not found: {parsed.method}"
+                    )
                 )
 
             elif msg.type == web.WSMsgType.ERROR:
@@ -280,11 +301,16 @@ class JsonRpcChannel(Channel):
         return ws
 
     async def _handle_ws_send(
-        self, ws: web.WebSocketResponse, parsed: Any,
-        session_id: str, request_id: str,
+        self,
+        ws: web.WebSocketResponse,
+        parsed: Any,
+        session_id: str,
+        request_id: str,
     ) -> None:
         message = parsed.params.get("message", "")
-        future: asyncio.Future[dict[str, Any]] = asyncio.get_event_loop().create_future()
+        future: asyncio.Future[dict[str, Any]] = (
+            asyncio.get_event_loop().create_future()
+        )
         pending_deque = self._pending.setdefault(session_id, deque())
         pending_deque.append((request_id, future))
 
@@ -300,20 +326,22 @@ class JsonRpcChannel(Channel):
             result = await asyncio.wait_for(future, timeout=300)
             result["id"] = request_id
             await ws.send_json(result)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self._remove_pending(session_id, request_id)
-            await ws.send_json(
-                error_response(request_id, -32603, "Request timed out")
-            )
+            await ws.send_json(error_response(request_id, -32603, "Request timed out"))
 
     async def _handle_ws_stream(
-        self, ws: web.WebSocketResponse, parsed: Any,
-        session_id: str, request_id: str,
+        self,
+        ws: web.WebSocketResponse,
+        parsed: Any,
+        session_id: str,
+        request_id: str,
     ) -> None:
         if session_id in self._stream_queues:
             await ws.send_json(
                 error_response(
-                    request_id, -32002,
+                    request_id,
+                    -32002,
                     f"Session {session_id} already has an active stream",
                 )
             )
@@ -344,72 +372,82 @@ class JsonRpcChannel(Channel):
                 if kind == "text":
                     delta = str(data.get("delta", ""))
                     accumulated_text.append(delta)
-                    await ws.send_json({
-                        "jsonrpc": "2.0",
-                        "method": "chat.stream.event",
-                        "params": {
-                            "session_id": session_id,
-                            "event": "token",
-                            "delta": delta,
-                        },
-                    })
+                    await ws.send_json(
+                        {
+                            "jsonrpc": "2.0",
+                            "method": "chat.stream.event",
+                            "params": {
+                                "session_id": session_id,
+                                "event": "token",
+                                "delta": delta,
+                            },
+                        }
+                    )
                 elif kind == "tool_call":
-                    await ws.send_json({
-                        "jsonrpc": "2.0",
-                        "method": "chat.stream.event",
-                        "params": {
-                            "session_id": session_id,
-                            "event": "tool_call",
-                            "name": data.get("name", ""),
-                            "args": data.get("args", {}),
-                        },
-                    })
+                    await ws.send_json(
+                        {
+                            "jsonrpc": "2.0",
+                            "method": "chat.stream.event",
+                            "params": {
+                                "session_id": session_id,
+                                "event": "tool_call",
+                                "name": data.get("name", ""),
+                                "args": data.get("args", {}),
+                            },
+                        }
+                    )
                 elif kind == "tool_result":
-                    await ws.send_json({
-                        "jsonrpc": "2.0",
-                        "method": "chat.stream.event",
-                        "params": {
-                            "session_id": session_id,
-                            "event": "tool_result",
-                            "name": data.get("name", ""),
-                            "result": data.get("result", ""),
-                        },
-                    })
+                    await ws.send_json(
+                        {
+                            "jsonrpc": "2.0",
+                            "method": "chat.stream.event",
+                            "params": {
+                                "session_id": session_id,
+                                "event": "tool_result",
+                                "name": data.get("name", ""),
+                                "result": data.get("result", ""),
+                            },
+                        }
+                    )
                 elif kind == "error":
-                    await ws.send_json({
-                        "jsonrpc": "2.0",
-                        "method": "chat.stream.event",
-                        "params": {
-                            "session_id": session_id,
-                            "event": "error",
-                            "message": str(data.get("message", data)),
-                        },
-                    })
+                    await ws.send_json(
+                        {
+                            "jsonrpc": "2.0",
+                            "method": "chat.stream.event",
+                            "params": {
+                                "session_id": session_id,
+                                "event": "error",
+                                "message": str(data.get("message", data)),
+                            },
+                        }
+                    )
 
             full_text = "".join(accumulated_text)
 
-            await ws.send_json({
-                "jsonrpc": "2.0",
-                "method": "chat.stream.event",
-                "params": {
-                    "session_id": session_id,
-                    "event": "done",
-                    "text": full_text,
-                },
-            })
-            await ws.send_json({
-                "jsonrpc": "2.0",
-                "result": {
-                    "session_id": session_id,
-                    "text": full_text,
-                    "status": "completed",
-                },
-                "id": request_id,
-            })
-        except asyncio.TimeoutError:
             await ws.send_json(
-                error_response(request_id, -32603, "Stream timed out")
+                {
+                    "jsonrpc": "2.0",
+                    "method": "chat.stream.event",
+                    "params": {
+                        "session_id": session_id,
+                        "event": "done",
+                        "text": full_text,
+                    },
+                }
             )
+            await ws.send_json(
+                {
+                    "jsonrpc": "2.0",
+                    "result": {
+                        "session_id": session_id,
+                        "text": full_text,
+                        "status": "completed",
+                    },
+                    "id": request_id,
+                }
+            )
+        except TimeoutError:
+            await ws.send_json(error_response(request_id, -32603, "Stream timed out"))
         finally:
             self._stream_queues.pop(session_id, None)
 

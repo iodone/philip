@@ -21,9 +21,7 @@ class PhilipPlugin:
         import philip.tools.vision_tools  # noqa: F401
 
     @hookimpl
-    async def build_prompt(
-        self, message: Any, session_id: str, state: State
-    ) -> str:
+    async def build_prompt(self, message: Any, session_id: str, state: State) -> str:
         """Build a text-only prompt — images go through vision tool, not main model."""
         content = content_of(message)
         if content.startswith(","):

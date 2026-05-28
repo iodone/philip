@@ -10,7 +10,6 @@ import pytest
 from philip.capabilities.wiki.config import DB9Section, VaultSection, WikiConfig
 from philip.capabilities.wiki.wiki import WikiPage
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

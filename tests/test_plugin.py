@@ -5,7 +5,6 @@ from __future__ import annotations
 from importlib import metadata
 
 import pytest
-
 from bub.channels.message import ChannelMessage, MediaItem
 from bub.types import State
 
@@ -25,7 +24,9 @@ async def test_load_state_exposes_current_image_media():
         chat_id="123",
         content="look at this",
         media=[
-            MediaItem(type="image", mime_type="image/png", url="data:image/png;base64,abc")
+            MediaItem(
+                type="image", mime_type="image/png", url="data:image/png;base64,abc"
+            )
         ],
     )
     state = await plugin.load_state(message=message, session_id="feishu:123")
@@ -93,7 +94,9 @@ async def test_build_prompt_returns_str_for_image_message():
         chat_id="123",
         content="看看这张图",
         media=[
-            MediaItem(type="image", mime_type="image/png", url="data:image/png;base64,abc")
+            MediaItem(
+                type="image", mime_type="image/png", url="data:image/png;base64,abc"
+            )
         ],
     )
     prompt = await plugin.build_prompt(message=message, session_id="s", state={})
@@ -128,8 +131,12 @@ async def test_build_prompt_strips_images_but_preserves_text():
         chat_id="123",
         content="分析这两张截图",
         media=[
-            MediaItem(type="image", mime_type="image/png", url="data:image/png;base64,aaa"),
-            MediaItem(type="image", mime_type="image/jpeg", url="data:image/jpeg;base64,bbb"),
+            MediaItem(
+                type="image", mime_type="image/png", url="data:image/png;base64,aaa"
+            ),
+            MediaItem(
+                type="image", mime_type="image/jpeg", url="data:image/jpeg;base64,bbb"
+            ),
         ],
     )
     prompt = await plugin.build_prompt(message=message, session_id="s", state={})

@@ -10,10 +10,10 @@ from pathlib import Path
 
 from philip.capabilities.wiki.wiki import list_markdown_files
 
-
 # ---------------------------------------------------------------------------
 # Data models
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class SyncEntry:
@@ -40,6 +40,7 @@ class SyncResult:
 # ---------------------------------------------------------------------------
 # Persistence
 # ---------------------------------------------------------------------------
+
 
 def load_sync_state(state_path: str | Path) -> SyncState:
     """Load sync state from JSON file."""
@@ -76,6 +77,7 @@ def save_sync_state(state_path: str | Path, state: SyncState) -> None:
 # Content hashing
 # ---------------------------------------------------------------------------
 
+
 def content_hash(file_path: str | Path) -> str:
     """SHA-256 of file content, truncated to first 16 hex chars."""
     data = Path(file_path).read_bytes()
@@ -85,6 +87,7 @@ def content_hash(file_path: str | Path) -> str:
 # ---------------------------------------------------------------------------
 # Sync computation
 # ---------------------------------------------------------------------------
+
 
 def compute_sync(
     dirs: list[str | Path],

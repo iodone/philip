@@ -9,11 +9,11 @@ from typing import Any
 
 from bub.channels.message import ChannelMessage
 from bub.framework import BubFramework
-from bub.types import Envelope, TurnResult
+from bub.types import Envelope
 
 from philip.server.jsonrpc import (
-    MISSING_SESSION_ID,
     METHOD_NOT_FOUND,
+    MISSING_SESSION_ID,
     JsonRpcRequest,
     error_response,
     success_response,
@@ -76,9 +76,7 @@ class Service:
             "chat.stream": self._handle_chat_stream,
         }
 
-    async def dispatch(
-        self, request: JsonRpcRequest
-    ) -> dict[str, Any] | StreamHandle:
+    async def dispatch(self, request: JsonRpcRequest) -> dict[str, Any] | StreamHandle:
         """Dispatch a validated request. Returns dict or StreamHandle."""
         handler = self._handlers.get(request.method)
         if handler is None:

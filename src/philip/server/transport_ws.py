@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from aiohttp import web
 
@@ -79,54 +79,66 @@ async def _stream_to_ws(ws: web.WebSocketResponse, handle: StreamHandle) -> None
             # Internal sentinel: turn completed, extract result
             if kind == "__turn_result__":
                 turn_result = data.get("result")
-                if turn_result and hasattr(turn_result, "model_output") and final_text is None:
+                if (
+                    turn_result
+                    and hasattr(turn_result, "model_output")
+                    and final_text is None
+                ):
                     final_text = turn_result.model_output
                 continue
 
             if kind == "text":
                 delta = str(data.get("delta", ""))
                 accumulated_text.append(delta)
-                await ws.send_json({
-                    "jsonrpc": "2.0",
-                    "method": "chat.stream.event",
-                    "params": {
-                        "session_id": handle.session_id,
-                        "event": "token",
-                        "delta": delta,
-                    },
-                })
+                await ws.send_json(
+                    {
+                        "jsonrpc": "2.0",
+                        "method": "chat.stream.event",
+                        "params": {
+                            "session_id": handle.session_id,
+                            "event": "token",
+                            "delta": delta,
+                        },
+                    }
+                )
             elif kind == "tool_call":
-                await ws.send_json({
-                    "jsonrpc": "2.0",
-                    "method": "chat.stream.event",
-                    "params": {
-                        "session_id": handle.session_id,
-                        "event": "tool_call",
-                        "name": data.get("name", ""),
-                        "args": data.get("args", {}),
-                    },
-                })
+                await ws.send_json(
+                    {
+                        "jsonrpc": "2.0",
+                        "method": "chat.stream.event",
+                        "params": {
+                            "session_id": handle.session_id,
+                            "event": "tool_call",
+                            "name": data.get("name", ""),
+                            "args": data.get("args", {}),
+                        },
+                    }
+                )
             elif kind == "tool_result":
-                await ws.send_json({
-                    "jsonrpc": "2.0",
-                    "method": "chat.stream.event",
-                    "params": {
-                        "session_id": handle.session_id,
-                        "event": "tool_result",
-                        "name": data.get("name", ""),
-                        "result": data.get("result", ""),
-                    },
-                })
+                await ws.send_json(
+                    {
+                        "jsonrpc": "2.0",
+                        "method": "chat.stream.event",
+                        "params": {
+                            "session_id": handle.session_id,
+                            "event": "tool_result",
+                            "name": data.get("name", ""),
+                            "result": data.get("result", ""),
+                        },
+                    }
+                )
             elif kind == "error":
-                await ws.send_json({
-                    "jsonrpc": "2.0",
-                    "method": "chat.stream.event",
-                    "params": {
-                        "session_id": handle.session_id,
-                        "event": "error",
-                        "message": str(data.get("message", data)),
-                    },
-                })
+                await ws.send_json(
+                    {
+                        "jsonrpc": "2.0",
+                        "method": "chat.stream.event",
+                        "params": {
+                            "session_id": handle.session_id,
+                            "event": "error",
+                            "message": str(data.get("message", data)),
+                        },
+                    }
+                )
             elif kind == "final":
                 # Capture final.text as fallback if accumulated text is empty
                 final_event_text = data.get("text")
@@ -139,26 +151,30 @@ async def _stream_to_ws(ws: web.WebSocketResponse, handle: StreamHandle) -> None
         full_text = "".join(accumulated_text) or final_text or ""
 
         # Send done notification
-        await ws.send_json({
-            "jsonrpc": "2.0",
-            "method": "chat.stream.event",
-            "params": {
-                "session_id": handle.session_id,
-                "event": "done",
-                "text": full_text,
-            },
-        })
+        await ws.send_json(
+            {
+                "jsonrpc": "2.0",
+                "method": "chat.stream.event",
+                "params": {
+                    "session_id": handle.session_id,
+                    "event": "done",
+                    "text": full_text,
+                },
+            }
+        )
 
         # Send JSON-RPC success response (matches the original request id)
-        await ws.send_json({
-            "jsonrpc": "2.0",
-            "result": {
-                "session_id": handle.session_id,
-                "text": full_text,
-                "status": "completed",
-            },
-            "id": handle.request_id,
-        })
+        await ws.send_json(
+            {
+                "jsonrpc": "2.0",
+                "result": {
+                    "session_id": handle.session_id,
+                    "text": full_text,
+                    "status": "completed",
+                },
+                "id": handle.request_id,
+            }
+        )
 
     except Exception as exc:
         await ws.send_json(

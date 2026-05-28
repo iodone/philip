@@ -22,12 +22,15 @@ _WIKILINK_RE = re.compile(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]")
 
 def extract_wikilinks(content: str) -> list[str]:
     """Extract unique wikilink targets from markdown *content*."""
-    return list(dict.fromkeys(m.group(1).strip() for m in _WIKILINK_RE.finditer(content)))
+    return list(
+        dict.fromkeys(m.group(1).strip() for m in _WIKILINK_RE.finditer(content))
+    )
 
 
 # ---------------------------------------------------------------------------
 # WikiPage model
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class WikiPage:
@@ -50,6 +53,7 @@ class WikiPage:
 # YAML frontmatter parsing
 # ---------------------------------------------------------------------------
 
+
 def _parse_frontmatter(text: str) -> tuple[dict[str, object], str]:
     """Parse YAML frontmatter from markdown text.
 
@@ -66,6 +70,7 @@ def _parse_frontmatter(text: str) -> tuple[dict[str, object], str]:
             _empty, yaml_text, body = parts
             try:
                 import yaml
+
                 meta = yaml.safe_load(yaml_text) or {}
             except (ModuleNotFoundError, Exception):
                 meta = {}
@@ -76,6 +81,7 @@ def _parse_frontmatter(text: str) -> tuple[dict[str, object], str]:
 # ---------------------------------------------------------------------------
 # Page loading
 # ---------------------------------------------------------------------------
+
 
 def list_markdown_files(directory: str | Path) -> list[Path]:
     """Recursively list ``*.md`` files under *directory*."""

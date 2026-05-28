@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -21,6 +20,7 @@ except ModuleNotFoundError:
 # ---------------------------------------------------------------------------
 # Config model
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class VaultSection:
@@ -87,6 +87,7 @@ def load_template(name: str) -> str:
 # Discovery
 # ---------------------------------------------------------------------------
 
+
 def find_vault_root(from_path: str | Path = ".") -> Path | None:
     """Walk up *from_path* looking for ``.llm-wiki/config.toml``."""
     d = Path(from_path).resolve()
@@ -113,6 +114,7 @@ def require_vault_root(from_path: str | Path = ".") -> Path:
 # Parsing
 # ---------------------------------------------------------------------------
 
+
 def _parse_toml(text: str) -> dict[str, Any]:
     """Parse TOML text, trying tomllib first, then toml fallback."""
     if tomllib is not None:
@@ -134,7 +136,9 @@ def load_config(vault_root: str | Path) -> WikiConfig:
     vault = VaultSection(
         name=vault_raw.get("name", "My Wiki"),
         language=vault_raw.get("language", "en"),
-        context_dir=vault_raw.get("context_dir", vault_raw.get("source_dir", "contexts")),
+        context_dir=vault_raw.get(
+            "context_dir", vault_raw.get("source_dir", "contexts")
+        ),
         wiki_dir=vault_raw.get("wiki_dir", "wiki"),
         pages_subdir=vault_raw.get("pages_subdir", "pages"),
     )
@@ -149,22 +153,23 @@ def load_config(vault_root: str | Path) -> WikiConfig:
 # Path computation
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class VaultPaths:
-    wiki: Path          # wiki/pages/ (or wiki/ if pages_subdir is empty)
-    wiki_root: Path     # wiki/
-    contexts: Path      # contexts/
-    purpose: Path       # wiki/wiki-purpose.md
-    schema: Path        # wiki/wiki-schema.md
-    agent: Path         # wiki/wiki-agent.md
-    log: Path           # wiki/wiki-log.md
-    claude_md: Path     # CLAUDE.md
-    agents_md: Path     # AGENTS.md
-    rules_dir: Path     # rules/
+    wiki: Path  # wiki/pages/ (or wiki/ if pages_subdir is empty)
+    wiki_root: Path  # wiki/
+    contexts: Path  # contexts/
+    purpose: Path  # wiki/wiki-purpose.md
+    schema: Path  # wiki/wiki-schema.md
+    agent: Path  # wiki/wiki-agent.md
+    log: Path  # wiki/wiki-log.md
+    claude_md: Path  # CLAUDE.md
+    agents_md: Path  # AGENTS.md
+    rules_dir: Path  # rules/
     claude_skills_dir: Path  # .claude/skills/
     agents_skills_dir: Path  # .agents/skills/
-    config: Path        # .llm-wiki/config.toml
-    sync_state: Path    # .llm-wiki/sync-state.json
+    config: Path  # .llm-wiki/config.toml
+    sync_state: Path  # .llm-wiki/sync-state.json
     llm_wiki_dir: Path  # .llm-wiki/
 
 

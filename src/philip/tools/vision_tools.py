@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
+from bub.tools import tool
 from pydantic import BaseModel, Field
 from republic import ToolContext
-
-from bub.tools import tool
 
 from philip.tools.vision_client import VisionClient
 from philip.tools.vision_settings import VisionSettings
@@ -48,7 +47,9 @@ async def vision_inspect_tool(
 
     media = list(context.state.get("vision_current_media", []) or [])
     if not media:
-        return "Vision inspection skipped: the current message has no image attachments."
+        return (
+            "Vision inspection skipped: the current message has no image attachments."
+        )
 
     if params.max_images is not None:
         media = media[: params.max_images]

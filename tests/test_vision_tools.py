@@ -9,7 +9,6 @@ from republic import ToolContext
 
 from philip.tools.vision_settings import VisionSettings
 
-
 # ---------------------------------------------------------------------------
 # Settings tests
 # ---------------------------------------------------------------------------
@@ -76,9 +75,14 @@ async def test_tool_returns_observation_for_current_images(monkeypatch):
     monkeypatch.setenv("BUB_VISION_API_BASE", "https://api.example.com/v1")
 
     fake_media = [
-        {"media_item": FakeMediaItem(url="data:image/png;base64,abc"), "mime_type": "image/png"}
+        {
+            "media_item": FakeMediaItem(url="data:image/png;base64,abc"),
+            "mime_type": "image/png",
+        }
     ]
-    context = _make_context(media_items=fake_media, vision_current_text="user asks about screenshot")
+    context = _make_context(
+        media_items=fake_media, vision_current_text="user asks about screenshot"
+    )
 
     with patch("philip.tools.vision_tools.VisionClient") as MockClient:
         instance = MockClient.return_value
@@ -127,9 +131,18 @@ async def test_tool_applies_max_images(monkeypatch):
     monkeypatch.setenv("BUB_VISION_API_BASE", "https://api.example.com/v1")
 
     fake_media = [
-        {"media_item": FakeMediaItem(url="data:image/png;base64,a"), "mime_type": "image/png"},
-        {"media_item": FakeMediaItem(url="data:image/png;base64,b"), "mime_type": "image/png"},
-        {"media_item": FakeMediaItem(url="data:image/png;base64,c"), "mime_type": "image/png"},
+        {
+            "media_item": FakeMediaItem(url="data:image/png;base64,a"),
+            "mime_type": "image/png",
+        },
+        {
+            "media_item": FakeMediaItem(url="data:image/png;base64,b"),
+            "mime_type": "image/png",
+        },
+        {
+            "media_item": FakeMediaItem(url="data:image/png;base64,c"),
+            "mime_type": "image/png",
+        },
     ]
     context = _make_context(media_items=fake_media)
 
@@ -156,7 +169,10 @@ async def test_tool_handles_vision_api_failure(monkeypatch):
     monkeypatch.setenv("BUB_VISION_API_BASE", "https://api.example.com/v1")
 
     fake_media = [
-        {"media_item": FakeMediaItem(url="data:image/png;base64,abc"), "mime_type": "image/png"}
+        {
+            "media_item": FakeMediaItem(url="data:image/png;base64,abc"),
+            "mime_type": "image/png",
+        }
     ]
     context = _make_context(media_items=fake_media)
 
@@ -179,13 +195,17 @@ async def test_tool_passes_message_content_not_metadata_to_vision(monkeypatch):
     monkeypatch.setenv("BUB_VISION_API_BASE", "https://api.example.com/v1")
 
     fake_media = [
-        {"media_item": FakeMediaItem(url="data:image/png;base64,abc"), "mime_type": "image/png"}
+        {
+            "media_item": FakeMediaItem(url="data:image/png;base64,abc"),
+            "mime_type": "image/png",
+        }
     ]
-    # Simulate real state: context is metadata, vision_current_text is the actual message
+    # Simulate real state: context is metadata,
+    # vision_current_text is the actual message
     context = _make_context(
         media_items=fake_media,
-        context="channel=$cli|chat_id=default",  # builtin metadata — should NOT be passed
-        vision_current_text="帮我看看这张报错截图怎么修",  # actual message — should be passed
+        context="channel=$cli|chat_id=default",  # metadata
+        vision_current_text="帮我看看这张报错截图怎么修",  # msg
     )
 
     with patch("philip.tools.vision_tools.VisionClient") as MockClient:

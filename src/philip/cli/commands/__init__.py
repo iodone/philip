@@ -1,1 +1,0 @@
-"""Philip CLI command modules."""

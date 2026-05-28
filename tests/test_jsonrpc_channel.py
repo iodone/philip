@@ -6,7 +6,6 @@ import asyncio
 import json
 from dataclasses import dataclass, field
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from aiohttp import web
@@ -14,7 +13,6 @@ from aiohttp.test_utils import TestClient, TestServer
 from bub.channels.message import ChannelMessage
 
 from philip.channels.jsonrpc_channel import JsonRpcChannel
-
 
 # ─── Helpers ─────────────────────────────────────────────────────
 
@@ -52,11 +50,16 @@ def _make_channel(
         if pending_deque and len(pending_deque) > 0:
             req_id, future = pending_deque.popleft()
             if not future.done():
-                future.set_result(success_response(req_id, {
-                    "session_id": session_id,
-                    "text": "echo: " + msg.content,
-                    "status": "completed",
-                }))
+                future.set_result(
+                    success_response(
+                        req_id,
+                        {
+                            "session_id": session_id,
+                            "text": "echo: " + msg.content,
+                            "status": "completed",
+                        },
+                    )
+                )
 
     handler = on_receive or _default_on_receive
     channel = JsonRpcChannel(on_receive=handler)
@@ -120,7 +123,9 @@ class TestChannelInterface:
         channel, _ = _make_channel()
         assert channel.enabled is True
 
-    def test_enabled_with_enabled_env_alias(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_enabled_with_enabled_env_alias(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setenv("BUB_JSONRPC_ENABLED", "true")
         monkeypatch.delenv("BUB_JSONRPC_ENABLE", raising=False)
         channel, _ = _make_channel()
@@ -165,19 +170,29 @@ class TestChannelInterface:
 class TestChannelHttp:
     async def test_ping(self, channel_client) -> None:
         cli, channel, received = channel_client
-        status, body = await _post_rpc(cli, {
-            "jsonrpc": "2.0", "id": "c1", "method": "chat.ping", "params": {},
-        })
+        status, body = await _post_rpc(
+            cli,
+            {
+                "jsonrpc": "2.0",
+                "id": "c1",
+                "method": "chat.ping",
+                "params": {},
+            },
+        )
         assert status == 200
         assert body["result"] == {"pong": True}
 
     async def test_chat_send(self, channel_client) -> None:
         cli, channel, received = channel_client
-        status, body = await _post_rpc(cli, {
-            "jsonrpc": "2.0", "id": "c2",
-            "method": "chat.send",
-            "params": {"session_id": "s1", "message": "hello"},
-        })
+        status, body = await _post_rpc(
+            cli,
+            {
+                "jsonrpc": "2.0",
+                "id": "c2",
+                "method": "chat.send",
+                "params": {"session_id": "s1", "message": "hello"},
+            },
+        )
         assert status == 200
         assert body["result"]["session_id"] == "s1"
         assert body["result"]["text"] == "echo: hello"
@@ -189,30 +204,43 @@ class TestChannelHttp:
 
     async def test_send_requires_session_id(self, channel_client) -> None:
         cli, _, _ = channel_client
-        status, body = await _post_rpc(cli, {
-            "jsonrpc": "2.0", "id": "c3",
-            "method": "chat.send", "params": {"message": "hi"},
-        })
+        status, body = await _post_rpc(
+            cli,
+            {
+                "jsonrpc": "2.0",
+                "id": "c3",
+                "method": "chat.send",
+                "params": {"message": "hi"},
+            },
+        )
         assert status == 400
         assert body["error"]["code"] == -32000
 
     async def test_method_not_found(self, channel_client) -> None:
         cli, _, _ = channel_client
-        status, body = await _post_rpc(cli, {
-            "jsonrpc": "2.0", "id": "c4",
-            "method": "no.such.method",
-            "params": {"session_id": "s1"},
-        })
+        status, body = await _post_rpc(
+            cli,
+            {
+                "jsonrpc": "2.0",
+                "id": "c4",
+                "method": "no.such.method",
+                "params": {"session_id": "s1"},
+            },
+        )
         assert status == 400
         assert body["error"]["code"] == -32601
 
     async def test_chat_stream_rejected_over_http(self, channel_client) -> None:
         cli, _, _ = channel_client
-        status, body = await _post_rpc(cli, {
-            "jsonrpc": "2.0", "id": "c5",
-            "method": "chat.stream",
-            "params": {"session_id": "s1", "message": "hi"},
-        })
+        status, body = await _post_rpc(
+            cli,
+            {
+                "jsonrpc": "2.0",
+                "id": "c5",
+                "method": "chat.stream",
+                "params": {"session_id": "s1", "message": "hi"},
+            },
+        )
         assert status == 400
         assert "WebSocket" in body["error"]["message"]
 
@@ -224,9 +252,14 @@ class TestChannelWs:
     async def test_ws_ping(self, channel_client) -> None:
         cli, _, _ = channel_client
         ws = await cli.ws_connect("/ws")
-        await ws.send_json({
-            "jsonrpc": "2.0", "id": "w1", "method": "chat.ping", "params": {},
-        })
+        await ws.send_json(
+            {
+                "jsonrpc": "2.0",
+                "id": "w1",
+                "method": "chat.ping",
+                "params": {},
+            }
+        )
         resp = await ws.receive_json(timeout=5)
         assert resp["result"] == {"pong": True}
         await ws.close()
@@ -234,11 +267,14 @@ class TestChannelWs:
     async def test_ws_chat_send(self, channel_client) -> None:
         cli, _, received = channel_client
         ws = await cli.ws_connect("/ws")
-        await ws.send_json({
-            "jsonrpc": "2.0", "id": "w2",
-            "method": "chat.send",
-            "params": {"session_id": "ws-s1", "message": "test"},
-        })
+        await ws.send_json(
+            {
+                "jsonrpc": "2.0",
+                "id": "w2",
+                "method": "chat.send",
+                "params": {"session_id": "ws-s1", "message": "test"},
+            }
+        )
         resp = await ws.receive_json(timeout=5)
         assert resp["result"]["text"] == "echo: test"
         assert resp["result"]["status"] == "completed"
@@ -248,10 +284,14 @@ class TestChannelWs:
     async def test_ws_missing_session_id(self, channel_client) -> None:
         cli, _, _ = channel_client
         ws = await cli.ws_connect("/ws")
-        await ws.send_json({
-            "jsonrpc": "2.0", "id": "w3",
-            "method": "chat.send", "params": {},
-        })
+        await ws.send_json(
+            {
+                "jsonrpc": "2.0",
+                "id": "w3",
+                "method": "chat.send",
+                "params": {},
+            }
+        )
         resp = await ws.receive_json(timeout=5)
         assert resp["error"]["code"] == -32000
         await ws.close()
@@ -264,11 +304,14 @@ class TestChannelStream:
     async def test_stream_basic(self, stream_channel_client) -> None:
         cli, channel, received = stream_channel_client
         ws = await cli.ws_connect("/ws")
-        await ws.send_json({
-            "jsonrpc": "2.0", "id": "s1",
-            "method": "chat.stream",
-            "params": {"session_id": "st1", "message": "hi"},
-        })
+        await ws.send_json(
+            {
+                "jsonrpc": "2.0",
+                "id": "s1",
+                "method": "chat.stream",
+                "params": {"session_id": "st1", "message": "hi"},
+            }
+        )
 
         notifications: list[dict] = []
         final_response = None
@@ -299,11 +342,14 @@ class TestChannelStream:
     async def test_stream_on_receive_called(self, stream_channel_client) -> None:
         cli, _, received = stream_channel_client
         ws = await cli.ws_connect("/ws")
-        await ws.send_json({
-            "jsonrpc": "2.0", "id": "s2",
-            "method": "chat.stream",
-            "params": {"session_id": "st2", "message": "test"},
-        })
+        await ws.send_json(
+            {
+                "jsonrpc": "2.0",
+                "id": "s2",
+                "method": "chat.stream",
+                "params": {"session_id": "st2", "message": "test"},
+            }
+        )
 
         while True:
             msg = await ws.receive_json(timeout=5)
@@ -329,6 +375,7 @@ class TestChannelSend:
         future1 = loop.create_future()
         future2 = loop.create_future()
         from collections import deque
+
         pending_deque = channel._pending.setdefault("test-session", deque())
         pending_deque.append(("req-1", future1))
         pending_deque.append(("req-2", future2))
@@ -393,7 +440,10 @@ class TestStreamEvents:
                 yield e
 
         msg = ChannelMessage(
-            session_id="s1", content="", channel="jsonrpc", chat_id="s1",
+            session_id="s1",
+            content="",
+            channel="jsonrpc",
+            chat_id="s1",
         )
         collected = []
         async for ev in channel.stream_events(msg, _gen()):
@@ -418,7 +468,10 @@ class TestStreamEvents:
                 yield e
 
         msg = ChannelMessage(
-            session_id="no-queue", content="", channel="jsonrpc", chat_id="no-queue",
+            session_id="no-queue",
+            content="",
+            channel="jsonrpc",
+            chat_id="no-queue",
         )
         collected = []
         async for ev in channel.stream_events(msg, _gen()):
@@ -442,11 +495,14 @@ class TestChannelWsEdgeCases:
     async def test_ws_method_not_found(self, channel_client) -> None:
         cli, _, _ = channel_client
         ws = await cli.ws_connect("/ws")
-        await ws.send_json({
-            "jsonrpc": "2.0", "id": "w4",
-            "method": "no.such.method",
-            "params": {"session_id": "s1"},
-        })
+        await ws.send_json(
+            {
+                "jsonrpc": "2.0",
+                "id": "w4",
+                "method": "no.such.method",
+                "params": {"session_id": "s1"},
+            }
+        )
         resp = await ws.receive_json(timeout=5)
         assert resp["error"]["code"] == -32601
         await ws.close()
@@ -454,12 +510,22 @@ class TestChannelWsEdgeCases:
     async def test_ws_multiple_requests(self, channel_client) -> None:
         cli, _, _ = channel_client
         ws = await cli.ws_connect("/ws")
-        await ws.send_json({
-            "jsonrpc": "2.0", "id": "w5a", "method": "chat.ping", "params": {},
-        })
-        await ws.send_json({
-            "jsonrpc": "2.0", "id": "w5b", "method": "chat.ping", "params": {},
-        })
+        await ws.send_json(
+            {
+                "jsonrpc": "2.0",
+                "id": "w5a",
+                "method": "chat.ping",
+                "params": {},
+            }
+        )
+        await ws.send_json(
+            {
+                "jsonrpc": "2.0",
+                "id": "w5b",
+                "method": "chat.ping",
+                "params": {},
+            }
+        )
         r1 = await ws.receive_json(timeout=5)
         r2 = await ws.receive_json(timeout=5)
         assert r1["id"] == "w5a"
@@ -469,10 +535,14 @@ class TestChannelWsEdgeCases:
     async def test_ws_session_get(self, channel_client) -> None:
         cli, _, _ = channel_client
         ws = await cli.ws_connect("/ws")
-        await ws.send_json({
-            "jsonrpc": "2.0", "id": "w6",
-            "method": "session.get", "params": {"session_id": "ws-test"},
-        })
+        await ws.send_json(
+            {
+                "jsonrpc": "2.0",
+                "id": "w6",
+                "method": "session.get",
+                "params": {"session_id": "ws-test"},
+            }
+        )
         resp = await ws.receive_json(timeout=5)
         assert resp["result"]["session_id"] == "ws-test"
         await ws.close()
@@ -485,23 +555,32 @@ class TestChannelHttpEdgeCases:
     async def test_empty_body(self, channel_client) -> None:
         cli, _, _ = channel_client
         resp = await cli.post(
-            "/rpc", data=b"", headers={"Content-Type": "application/json"},
+            "/rpc",
+            data=b"",
+            headers={"Content-Type": "application/json"},
         )
         assert resp.status == 400
 
     async def test_wrong_content_type(self, channel_client) -> None:
         cli, _, _ = channel_client
         resp = await cli.post(
-            "/rpc", data=b"{}", headers={"Content-Type": "text/plain"},
+            "/rpc",
+            data=b"{}",
+            headers={"Content-Type": "text/plain"},
         )
         assert resp.status == 415
 
     async def test_session_get(self, channel_client) -> None:
         cli, _, _ = channel_client
-        status, body = await _post_rpc(cli, {
-            "jsonrpc": "2.0", "id": "c6",
-            "method": "session.get", "params": {"session_id": "test-abc"},
-        })
+        status, body = await _post_rpc(
+            cli,
+            {
+                "jsonrpc": "2.0",
+                "id": "c6",
+                "method": "session.get",
+                "params": {"session_id": "test-abc"},
+            },
+        )
         assert status == 200
         assert body["result"]["session_id"] == "test-abc"
 
@@ -531,11 +610,14 @@ class TestChannelStreamWithTools:
         server = TestServer(channel._app)
         async with TestClient(server) as cli:
             ws = await cli.ws_connect("/ws")
-            await ws.send_json({
-                "jsonrpc": "2.0", "id": "t1",
-                "method": "chat.stream",
-                "params": {"session_id": "tool-s1", "message": "search"},
-            })
+            await ws.send_json(
+                {
+                    "jsonrpc": "2.0",
+                    "id": "t1",
+                    "method": "chat.stream",
+                    "params": {"session_id": "tool-s1", "message": "search"},
+                }
+            )
 
             notifications = []
             while True:
@@ -551,7 +633,9 @@ class TestChannelStreamWithTools:
             assert "tool_result" in events_kind
             assert "done" in events_kind
 
-            tool_call = next(n for n in notifications if n["params"]["event"] == "tool_call")
+            tool_call = next(
+                n for n in notifications if n["params"]["event"] == "tool_call"
+            )
             assert tool_call["params"]["name"] == "search"
             assert tool_call["params"]["args"] == {"q": "test"}
 
@@ -570,11 +654,14 @@ class TestChannelStreamWithTools:
         server = TestServer(channel._app)
         async with TestClient(server) as cli:
             ws = await cli.ws_connect("/ws")
-            await ws.send_json({
-                "jsonrpc": "2.0", "id": "t2",
-                "method": "chat.stream",
-                "params": {"session_id": "err-s1", "message": "test"},
-            })
+            await ws.send_json(
+                {
+                    "jsonrpc": "2.0",
+                    "id": "t2",
+                    "method": "chat.stream",
+                    "params": {"session_id": "err-s1", "message": "test"},
+                }
+            )
 
             notifications = []
             while True:
@@ -603,16 +690,22 @@ class TestConcurrentRequests:
         async with TestClient(server) as cli:
             ws = await cli.ws_connect("/ws")
             # Send two requests with same session_id but different request_ids
-            await ws.send_json({
-                "jsonrpc": "2.0", "id": "conc-1",
-                "method": "chat.send",
-                "params": {"session_id": "same-sess", "message": "first"},
-            })
-            await ws.send_json({
-                "jsonrpc": "2.0", "id": "conc-2",
-                "method": "chat.send",
-                "params": {"session_id": "same-sess", "message": "second"},
-            })
+            await ws.send_json(
+                {
+                    "jsonrpc": "2.0",
+                    "id": "conc-1",
+                    "method": "chat.send",
+                    "params": {"session_id": "same-sess", "message": "first"},
+                }
+            )
+            await ws.send_json(
+                {
+                    "jsonrpc": "2.0",
+                    "id": "conc-2",
+                    "method": "chat.send",
+                    "params": {"session_id": "same-sess", "message": "second"},
+                }
+            )
 
             r1 = await ws.receive_json(timeout=5)
             r2 = await ws.receive_json(timeout=5)
@@ -637,11 +730,15 @@ class TestConcurrentRequests:
             import asyncio as _aio
 
             async def _send(req_id: str, msg: str):
-                status, body = await _post_rpc(cli, {
-                    "jsonrpc": "2.0", "id": req_id,
-                    "method": "chat.send",
-                    "params": {"session_id": "http-sess", "message": msg},
-                })
+                status, body = await _post_rpc(
+                    cli,
+                    {
+                        "jsonrpc": "2.0",
+                        "id": req_id,
+                        "method": "chat.send",
+                        "params": {"session_id": "http-sess", "message": msg},
+                    },
+                )
                 return status, body
 
             # Use tasks to run concurrently
@@ -656,7 +753,6 @@ class TestConcurrentRequests:
             texts = {b1["result"]["text"], b2["result"]["text"]}
             assert texts == {"echo: alpha", "echo: beta"}
             assert len(received) == 2
-            await ws.close() if False else None  # no ws here
 
     async def test_request_id_not_affected_by_session_reuse(self) -> None:
         """request_id correlation works independently of session_id."""
@@ -668,11 +764,14 @@ class TestConcurrentRequests:
             ws = await cli.ws_connect("/ws")
             # Same session, different request_ids
             for i in range(5):
-                await ws.send_json({
-                    "jsonrpc": "2.0", "id": f"seq-{i}",
-                    "method": "chat.send",
-                    "params": {"session_id": "reuse-sess", "message": f"msg-{i}"},
-                })
+                await ws.send_json(
+                    {
+                        "jsonrpc": "2.0",
+                        "id": f"seq-{i}",
+                        "method": "chat.send",
+                        "params": {"session_id": "reuse-sess", "message": f"msg-{i}"},
+                    }
+                )
 
             for i in range(5):
                 resp = await ws.receive_json(timeout=5)
@@ -705,21 +804,27 @@ class TestConcurrentRequests:
         async with TestClient(server) as cli:
             # First WS: start stream and read first token
             ws1 = await cli.ws_connect("/ws")
-            await ws1.send_json({
-                "jsonrpc": "2.0", "id": "stream-1",
-                "method": "chat.stream",
-                "params": {"session_id": "dup-sess", "message": "first"},
-            })
+            await ws1.send_json(
+                {
+                    "jsonrpc": "2.0",
+                    "id": "stream-1",
+                    "method": "chat.stream",
+                    "params": {"session_id": "dup-sess", "message": "first"},
+                }
+            )
             msg = await ws1.receive_json(timeout=5)
             assert msg["params"]["event"] == "token"
 
             # Second WS: attempt stream on same session — should be rejected
             ws2 = await cli.ws_connect("/ws")
-            await ws2.send_json({
-                "jsonrpc": "2.0", "id": "stream-2",
-                "method": "chat.stream",
-                "params": {"session_id": "dup-sess", "message": "second"},
-            })
+            await ws2.send_json(
+                {
+                    "jsonrpc": "2.0",
+                    "id": "stream-2",
+                    "method": "chat.stream",
+                    "params": {"session_id": "dup-sess", "message": "second"},
+                }
+            )
             resp = await ws2.receive_json(timeout=5)
             assert "error" in resp
             assert resp["error"]["code"] == -32002

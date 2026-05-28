@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -85,9 +83,15 @@ Kafka uses a variant of [[raft-consensus]] for metadata management.
     )
 
     # Purpose and schema
-    (tmp_path / "wiki" / "wiki-purpose.md").write_text("# Purpose\nTest wiki.\n", encoding="utf-8")
-    (tmp_path / "wiki" / "wiki-schema.md").write_text("# Schema\nStandard.\n", encoding="utf-8")
-    (tmp_path / "wiki" / "wiki-log.md").write_text("# Log\n## [2026-01-01] init\nCreated.\n", encoding="utf-8")
+    (tmp_path / "wiki" / "wiki-purpose.md").write_text(
+        "# Purpose\nTest wiki.\n", encoding="utf-8"
+    )
+    (tmp_path / "wiki" / "wiki-schema.md").write_text(
+        "# Schema\nStandard.\n", encoding="utf-8"
+    )
+    (tmp_path / "wiki" / "wiki-log.md").write_text(
+        "# Log\n## [2026-01-01] init\nCreated.\n", encoding="utf-8"
+    )
 
     return tmp_path
 
@@ -142,9 +146,15 @@ class TestConfig:
         assert paths.sync_state == vault / ".llm-wiki" / "sync-state.json"
 
     def test_vault_paths_custom_dirs(self, tmp_path: Path) -> None:
-        from philip.capabilities.wiki.config import VaultSection, WikiConfig, vault_paths
+        from philip.capabilities.wiki.config import (
+            VaultSection,
+            WikiConfig,
+            vault_paths,
+        )
 
-        config = WikiConfig(vault=VaultSection(context_dir="raw", wiki_dir="docs", pages_subdir=""))
+        config = WikiConfig(
+            vault=VaultSection(context_dir="raw", wiki_dir="docs", pages_subdir="")
+        )
         paths = vault_paths(tmp_path, config)
 
         assert paths.contexts == tmp_path / "raw"
@@ -161,7 +171,10 @@ class TestWiki:
     def test_extract_wikilinks(self) -> None:
         from philip.capabilities.wiki.wiki import extract_wikilinks
 
-        content = "See [[raft-consensus]] and [[paxos|Paxos algorithm]]. Also [[raft-consensus]]."
+        content = (
+            "See [[raft-consensus]] and [[paxos|Paxos algorithm]]."
+            " Also [[raft-consensus]]."
+        )
         links = extract_wikilinks(content)
         assert links == ["raft-consensus", "paxos"]
 
@@ -181,7 +194,9 @@ class TestWiki:
     def test_parse_wiki_page(self, vault: Path) -> None:
         from philip.capabilities.wiki.wiki import parse_wiki_page
 
-        page = parse_wiki_page(vault / "wiki" / "pages" / "raft-consensus.md", vault / "wiki" / "pages")
+        page = parse_wiki_page(
+            vault / "wiki" / "pages" / "raft-consensus.md", vault / "wiki" / "pages"
+        )
         assert page.title == "Raft Consensus"
         assert page.description == "A consensus algorithm for distributed systems"
         assert page.tags == ["concept", "distributed"]
@@ -443,12 +458,20 @@ class TestSync:
         assert state.last_sync == ""
 
     def test_save_and_load_sync_state(self, tmp_path: Path) -> None:
-        from philip.capabilities.wiki.sync import SyncEntry, SyncState, load_sync_state, save_sync_state
+        from philip.capabilities.wiki.sync import (
+            SyncEntry,
+            SyncState,
+            load_sync_state,
+            save_sync_state,
+        )
 
         state = SyncState(
             entries={
                 "wiki/test.md": SyncEntry(
-                    path="wiki/test.md", mtime=12345.0, content_hash="abc123", last_synced="2026-01-01"
+                    path="wiki/test.md",
+                    mtime=12345.0,
+                    content_hash="abc123",
+                    last_synced="2026-01-01",
                 )
             },
             last_sync="2026-01-01",

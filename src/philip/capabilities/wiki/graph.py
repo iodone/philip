@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from philip.capabilities.wiki.wiki import WikiPage
-
 
 # ---------------------------------------------------------------------------
 # Data models
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class GraphNode:
@@ -32,14 +32,15 @@ class GraphAnalysis:
     nodes: list[GraphNode]
     edges: list[GraphEdge]
     orphans: list[str]
-    wanted_pages: dict[str, list[str]]     # target -> [referencing pages]
-    communities: dict[str, list[str]]       # label -> [member slugs]
+    wanted_pages: dict[str, list[str]]  # target -> [referencing pages]
+    communities: dict[str, list[str]]  # label -> [member slugs]
     hubs: list[GraphNode]
 
 
 # ---------------------------------------------------------------------------
 # Link resolution
 # ---------------------------------------------------------------------------
+
 
 def _normalize_key(name: str) -> str:
     """Normalize a name for slug matching: lowercase, spaces to hyphens."""
@@ -62,12 +63,15 @@ def _build_slug_map(pages: list[WikiPage]) -> dict[str, str]:
 
 def _resolve_link(target: str, slug_map: dict[str, str]) -> str | None:
     lower = target.lower().removesuffix(".md")
-    return slug_map.get(lower) or slug_map.get(_normalize_key(target.removesuffix(".md")))
+    return slug_map.get(lower) or slug_map.get(
+        _normalize_key(target.removesuffix(".md"))
+    )
 
 
 # ---------------------------------------------------------------------------
 # Community detection (simplified label propagation)
 # ---------------------------------------------------------------------------
+
 
 def _detect_communities(
     pages: list[WikiPage],
@@ -127,6 +131,7 @@ def _detect_communities(
 # Graph analysis
 # ---------------------------------------------------------------------------
 
+
 def analyze_graph(pages: list[WikiPage]) -> GraphAnalysis:
     """Build a link graph from wiki pages and analyze it."""
     slug_map = _build_slug_map(pages)
@@ -164,7 +169,9 @@ def analyze_graph(pages: list[WikiPage]) -> GraphAnalysis:
     orphans = [n.slug for n in nodes if n.incoming_count == 0]
 
     # Hubs: top 10 by total connections (incoming + outgoing)
-    hubs = sorted(nodes, key=lambda n: n.link_count + n.incoming_count, reverse=True)[:10]
+    hubs = sorted(nodes, key=lambda n: n.link_count + n.incoming_count, reverse=True)[
+        :10
+    ]
 
     # Communities
     communities = _detect_communities(pages, edges)
