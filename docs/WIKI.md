@@ -5,7 +5,7 @@ Wiki 是 Philip 的知识库管理能力，提供 workspace 初始化、BM25/向
 ## 初始化
 
 ```bash
-philip wiki init /path/to/workspace
+philip wiki.init /path/to/workspace
 ```
 
 创建完整 workspace 结构：
@@ -45,16 +45,16 @@ philip wiki init /path/to/workspace
 
 | 选项 | 说明 |
 |:---|:---|
-| `--force` | 覆盖已有文件和 skill |
+| `force=true` | 覆盖已有文件和 skill |
 
 重复运行安全：已有文件默认跳过。
 
 ## 搜索
 
 ```bash
-philip wiki search <query>
-philip wiki search --bm25-only <query>   # 跳过向量搜索
-philip wiki search -n 20 <query>         # 更多结果
+philip wiki.search query=<query>
+philip wiki.search query=<query> bm25_only=true   # 跳过向量搜索
+philip wiki.search query=<query> limit=20         # 更多结果
 ```
 
 默认使用 BM25 搜索（支持 CJK 分词）。配置 DB9 后自动启用向量搜索 + RRF 融合。
@@ -62,8 +62,8 @@ philip wiki search -n 20 <query>         # 更多结果
 ## 同步
 
 ```bash
-philip wiki sync
-philip wiki sync --dry-run   # 仅展示变更，不更新状态
+philip wiki.sync
+philip wiki.sync dry_run=true   # 仅展示变更，不更新状态
 ```
 
 基于 mtime + SHA-256 内容哈希检测变更。配置 DB9 后自动将变更推送到 PostgreSQL。
@@ -71,8 +71,7 @@ philip wiki sync --dry-run   # 仅展示变更，不更新状态
 ## 图分析
 
 ```bash
-philip wiki graph
-philip wiki graph --json     # JSON 输出
+philip wiki.graph
 ```
 
 分析 wiki 页面间的 `[[wikilinks]]` 关系：
@@ -84,19 +83,10 @@ philip wiki graph --json     # JSON 输出
 ## 状态
 
 ```bash
-philip wiki status
+philip wiki.status
 ```
 
 输出 wiki 健康概览：页面数、contexts 数、链接数、最近修改、健康问题。
-
-## Skill 管理
-
-```bash
-philip wiki skill                    # 列出可用 skill
-philip wiki skill install            # 安装到 .claude/skills/ 和 .agents/skills/
-philip wiki skill install --dir /ws  # 指定 workspace
-philip wiki skill show <name>        # 查看 skill 内容
-```
 
 ## DB9 配置
 
@@ -109,8 +99,7 @@ url = "postgresql://localhost/my_wiki"
 
 需要：
 - PostgreSQL + pgvector 扩展
-- `pip install psycopg2-binary`（或 `pip install philip[db9]`）
-- 1024 维 HNSW 余弦索引（由 `philip wiki sync` 自动创建）
+- 1024 维 HNSW 余弦索引（由 `philip wiki.sync` 自动创建）
 
 ## 配置参考
 
