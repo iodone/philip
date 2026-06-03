@@ -2208,7 +2208,7 @@ wheels = [
 [[package]]
 name = "rub"
 version = "1.0.0"
-source = { git = "https://github.com/iodone/rubick.git?branch=main#5c83c62d71b9c17fc35b4eb942ad3be20353aea6" }
+source = { git = "https://github.com/iodone/rubick.git?branch=main#d7cffb319973c4a0d13ee0af6943b66a913b38ca" }
 dependencies = [
     { name = "aiosqlite" },
     { name = "httpx" },
