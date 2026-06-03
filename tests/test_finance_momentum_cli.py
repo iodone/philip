@@ -1,4 +1,4 @@
-"""Tests for philip finance CLI — tech rotation monitor."""
+"""Tests for philip finance CLI — tech momentum monitor."""
 
 from __future__ import annotations
 
@@ -18,13 +18,13 @@ def _invoke(*args: str):
 # ─── CLI Registration ────────────────────────────────────────────
 
 
-def test_finance_rotation_discover():
+def test_finance_momentum_discover():
     result = _invoke("-h")
     assert result.exit_code == 0
     assert "finance.momentum" in result.output
 
 
-def test_finance_rotation_inspect():
+def test_finance_momentum_inspect():
     result = _invoke("finance.momentum", "-h")
     assert result.exit_code == 0
     assert "momentum" in result.output.lower()
@@ -33,7 +33,7 @@ def test_finance_rotation_inspect():
 # ─── Execution ───────────────────────────────────────────────────
 
 
-def test_finance_rotation_execute():
+def test_finance_momentum_execute():
     mock_results = [
         {
             "valid": True,
@@ -72,10 +72,10 @@ def test_finance_rotation_execute():
         result = _invoke("finance.momentum")
 
     assert result.exit_code == 0
-    assert "finance" in result.output.lower() or "rotation" in result.output.lower()
+    assert "finance" in result.output.lower() or "momentum" in result.output.lower()
 
 
-def test_finance_rotation_empty():
+def test_finance_momentum_empty():
     with patch(
         "philip.cli.finance.momentum.run_rotation_monitor",
         return_value=[],

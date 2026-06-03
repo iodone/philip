@@ -28,11 +28,6 @@ from philip.cli.wiki import (
 )
 
 
-def _matching_ops(op_id: str) -> list[Operation]:
-    """Return operations whose ID starts with ``op_id.``."""
-    prefix = f"{op_id}."
-    return [op for op in _ALL_OPERATIONS if op.operation_id.startswith(prefix)]
-
 # ---------------------------------------------------------------------------
 # Aggregated declarations
 # ---------------------------------------------------------------------------
@@ -92,18 +87,6 @@ class PhilipAdapter(Adapter):
                     description=op.description,
                     parameters=op.parameters,
                 )
-        # Group prefix — list matching sub-operations
-        children = _matching_ops(op_id)
-        if children:
-            lines = [f"'{op_id}' is a group. Available operations:"]
-            for op in children:
-                lines.append(f"  {op.operation_id}  — {op.description}")
-            return OperationDetail(
-                operation_id=op_id,
-                display_name=f"{op_id} (group)",
-                description="\n".join(lines),
-                parameters=[],
-            )
         from rub.errors import OperationNotFoundError
 
         raise OperationNotFoundError(f"Operation '{op_id}' not found")
@@ -122,16 +105,6 @@ class PhilipAdapter(Adapter):
             if is_async:
                 return await fn(args)
             return fn(args)
-
-        # Group prefix — return matching sub-operations
-        children = _matching_ops(op_id)
-        if children:
-            return ExecutionResult(
-                data={
-                    "group": op_id,
-                    "operations": [op.model_dump() for op in children],
-                }
-            )
 
         from rub.errors import OperationNotFoundError
 
