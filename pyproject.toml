@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "aiohttp>=3.9",
+    "akshare>=1.14",
     "bub",
     "bub-im-bridge",
     "bub-web-search",
@@ -76,3 +77,6 @@ target-version = ["py312"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+filterwarnings = [
+    "ignore::DeprecationWarning:py_mini_racer",
+]

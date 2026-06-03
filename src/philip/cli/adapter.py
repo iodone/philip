@@ -8,6 +8,15 @@ from rub.adapter import Adapter, ExecutionResult
 from rub.schema import Operation, OperationDetail
 
 from philip.cli import chat
+from philip.cli.finance import (
+    _EXECUTE as _FINANCE_EXECUTE,
+)
+from philip.cli.finance import (
+    DETAILS as _FINANCE_DETAILS,
+)
+from philip.cli.finance import (
+    OPERATIONS as _FINANCE_OPS,
+)
 from philip.cli.wiki import (
     _EXECUTE as _WIKI_EXECUTE,
 )
@@ -22,15 +31,25 @@ from philip.cli.wiki import (
 # Aggregated declarations
 # ---------------------------------------------------------------------------
 
-_ALL_OPERATIONS: list[Operation] = [*chat.OPERATIONS, *_WIKI_OPS]
+_ALL_OPERATIONS: list[Operation] = [
+    *chat.OPERATIONS,
+    *_WIKI_OPS,
+    *_FINANCE_OPS,
+]
 
-_ALL_DETAILS: dict[str, OperationDetail] = {**chat.DETAILS, **_WIKI_DETAILS}
+_ALL_DETAILS: dict[str, OperationDetail] = {
+    **chat.DETAILS,
+    **_WIKI_DETAILS,
+    **_FINANCE_DETAILS,
+}
 
 # operation_id → (is_async, execute_fn)
 _DISPATCH: dict[str, tuple[bool, Any]] = {}
 for op in chat.OPERATIONS:
     _DISPATCH[op.operation_id] = (True, chat.execute)
 for op_id, fn in _WIKI_EXECUTE.items():
+    _DISPATCH[op_id] = (False, fn)
+for op_id, fn in _FINANCE_EXECUTE.items():
     _DISPATCH[op_id] = (False, fn)
 
 
