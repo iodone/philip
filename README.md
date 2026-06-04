@@ -45,6 +45,12 @@ philip/
 pipx install git+https://github.com/iodone/philip.git
 ```
 
+或使用 `uv`：
+
+```bash
+uv tool install git+https://github.com/iodone/philip.git
+```
+
 安装后即可在任意目录使用：
 
 ```bash
