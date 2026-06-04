@@ -124,8 +124,8 @@ for op_id, fn in _WIKI_EXECUTE.items():
     _DISPATCH[op_id] = (False, fn)
 for op_id, fn in _FINANCE_EXECUTE.items():
     _DISPATCH[op_id] = (False, fn)
-for op_id, fn in _GATEWAY_EXECUTE.items():
-    _DISPATCH[op_id] = (False, fn)
+for op_id, (is_async, fn) in _GATEWAY_EXECUTE.items():
+    _DISPATCH[op_id] = (is_async, fn)
 
 # Merge extensions
 _ext_ops, _ext_details, _ext_dispatch = _load_extensions()

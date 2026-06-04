@@ -14,7 +14,6 @@ OPERATIONS: list[Operation] = [op for m in _MODULES for op in m.OPERATIONS]
 DETAILS: dict[str, OperationDetail] = {}
 for m in _MODULES:
     DETAILS.update(m.DETAILS)
-_EXECUTE: dict[str, Any] = {}
+_EXECUTE: dict[str, tuple[bool, Any]] = {}
 for m in _MODULES:
-    for op in m.OPERATIONS:
-        _EXECUTE[op.operation_id] = m.execute
+    _EXECUTE.update(m._EXECUTE)
