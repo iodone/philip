@@ -7,25 +7,18 @@ requires-python = ">=3.12"
 dependencies = [
     "aiohttp>=3.9",
     "akshare>=1.14",
-    "bub",
-    "bub-im-bridge",
-    "bub-web-search",
-    "bub-schedule",
+    "bub @ git+https://github.com/bubbuild/bub.git@main",
+    "bub-im-bridge @ git+https://github.com/iodone/bub-im-bridge.git@v0.7.0",
+    "bub-web-search @ git+https://github.com/bubbuild/bub-contrib.git@main#subdirectory=packages/bub-web-search",
+    "bub-schedule @ git+https://github.com/bubbuild/bub-contrib.git@main#subdirectory=packages/bub-schedule",
     "psycopg2-binary>=2.9",
     "python-frontmatter>=1.0",
-    "rub",
+    "rub @ git+https://github.com/iodone/rubick.git@main",
     "toml>=0.10",
 ]
 
 [project.scripts]
 philip = "philip.cli.__main__:app"
-
-[tool.uv.sources]
-bub = { git = "https://github.com/bubbuild/bub.git", branch = "main" }
-bub-im-bridge = { git = "https://github.com/iodone/bub-im-bridge.git", tag = "v0.7.0" }
-bub-web-search = { git = "https://github.com/bubbuild/bub-contrib.git", branch = "main", subdirectory = "packages/bub-web-search" }
-bub-schedule = { git = "https://github.com/bubbuild/bub-contrib.git", branch = "main", subdirectory = "packages/bub-schedule" }
-rub = { git = "https://github.com/iodone/rubick.git", branch = "main" }
 
 [dependency-groups]
 dev = [
