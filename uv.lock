@@ -314,8 +314,8 @@ wheels = [
 
 [[package]]
 name = "bub"
-version = "0.3.8"
-source = { git = "https://github.com/bubbuild/bub.git?branch=main#1c90e37ea102efd5d6497ae1c8f86d857df60e62" }
+version = "0.3.9.dev13+g89f461e0e"
+source = { git = "https://github.com/bubbuild/bub.git?rev=main#89f461e0e29b9d6c0d765fdb9318c1a79474b229" }
 dependencies = [
     { name = "aiohttp" },
     { name = "any-llm-sdk" },
@@ -337,7 +337,7 @@ dependencies = [
 [[package]]
 name = "bub-im-bridge"
 version = "0.7.0"
-source = { git = "https://github.com/iodone/bub-im-bridge.git?tag=v0.7.0#11e6c62f711a8b38afc04618138af0d87c9a6cdb" }
+source = { git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.7.0#11e6c62f711a8b38afc04618138af0d87c9a6cdb" }
 dependencies = [
     { name = "bub" },
     { name = "lark-oapi" },
@@ -347,7 +347,7 @@ dependencies = [
 [[package]]
 name = "bub-schedule"
 version = "0.1.0"
-source = { git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&branch=main#e7b3a1e56ec154244cc24967437a7062f65c4db4" }
+source = { git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&rev=main#75c0778c7083fc9355d1c46d2816077290ae8349" }
 dependencies = [
     { name = "apscheduler" },
     { name = "republic" },
@@ -356,7 +356,7 @@ dependencies = [
 [[package]]
 name = "bub-web-search"
 version = "0.1.0"
-source = { git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&branch=main#e7b3a1e56ec154244cc24967437a7062f65c4db4" }
+source = { git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&rev=main#75c0778c7083fc9355d1c46d2816077290ae8349" }
 
 [[package]]
 name = "certifi"
@@ -1575,13 +1575,13 @@ dev = [
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.9" },
     { name = "akshare", specifier = ">=1.14" },
-    { name = "bub", git = "https://github.com/bubbuild/bub.git?branch=main" },
-    { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?tag=v0.7.0" },
-    { name = "bub-schedule", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&branch=main" },
-    { name = "bub-web-search", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&branch=main" },
+    { name = "bub", git = "https://github.com/bubbuild/bub.git?rev=main" },
+    { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.7.0" },
+    { name = "bub-schedule", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&rev=main" },
+    { name = "bub-web-search", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&rev=main" },
     { name = "psycopg2-binary", specifier = ">=2.9" },
     { name = "python-frontmatter", specifier = ">=1.0" },
-    { name = "rub", git = "https://github.com/iodone/rubick.git?branch=main" },
+    { name = "rub", git = "https://github.com/iodone/rubick.git?rev=main" },
     { name = "toml", specifier = ">=0.10" },
 ]
 
@@ -2208,7 +2208,7 @@ wheels = [
 [[package]]
 name = "rub"
 version = "1.0.0"
-source = { git = "https://github.com/iodone/rubick.git?branch=main#d7cffb319973c4a0d13ee0af6943b66a913b38ca" }
+source = { git = "https://github.com/iodone/rubick.git?rev=main#d7cffb319973c4a0d13ee0af6943b66a913b38ca" }
 dependencies = [
     { name = "aiosqlite" },
     { name = "httpx" },
