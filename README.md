@@ -39,13 +39,7 @@ philip/
 
 ### CLI 工具（推荐）
 
-使用 `pipx` 安装 `philip` CLI，命令会注册到系统 PATH，agent 和 bash 脚本可直接调用：
-
-```bash
-pipx install git+https://github.com/iodone/philip.git
-```
-
-或使用 `uv`：
+使用 `uv tool install` 安装 `philip` CLI，命令会注册到系统 PATH，agent 和 bash 脚本可直接调用：
 
 ```bash
 uv tool install git+https://github.com/iodone/philip.git
@@ -253,6 +247,8 @@ curl -s http://localhost:8420/rpc \
 
 Philip 支持通过 entry-point 机制扩展 CLI，在不修改 philip 源码的情况下添加自定义 operation。
 
+扩展包必须将 `philip` 声明为依赖，并提供 `[project.scripts]` 入口，这样 `uv tool install .` 会把 philip 和扩展装进同一个隔离环境，entry point 自动发现。
+
 ### 创建扩展包
 
 1. 创建一个 Python 包，实现 operations 模块：
@@ -289,20 +285,28 @@ _EXECUTE = {
 }
 ```
 
-2. 在 `pyproject.toml` 中声明 entry point：
+2. 在 `pyproject.toml` 中声明 philip 依赖、scripts 入口和 entry point：
 
 ```toml
+[project]
+name = "my-tools"
+dependencies = [
+    "philip @ git+https://github.com/iodone/philip.git@main",
+]
+
+[project.scripts]
+philip = "philip.cli.__main__:app"
+
 [project.entry-points.'philip.extensions']
 my-feature = "my_pkg.cli.my_feature"
 ```
 
-3. 安装扩展包后，philip CLI 和 `rub philip://` 自动发现并合并扩展 operations：
+3. 安装扩展包：
 
 ```bash
-pip install my-pkg
+uv tool install . --force
 philip -h                    # 可以看到 my-feature.hello
 philip my-feature.hello      # 调用扩展 operation
-rub philip:// my-feature.hello  # 同样可用
 ```
 
 ### 扩展约定
