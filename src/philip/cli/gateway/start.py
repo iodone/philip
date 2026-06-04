@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+import subprocess
+import sys
 from typing import Any
 
 from rub.adapter import ExecutionResult
@@ -22,7 +23,8 @@ DETAILS: dict[str, OperationDetail] = {
         operation_id="gateway.start",
         display_name="Start Gateway",
         description=(
-            "Start Bub message listeners via ChannelManager."
+            "Start Bub message listeners. Runs `bub gateway` as a subprocess"
+            " to avoid event loop conflicts with lark_oapi's WebSocket client."
             " Pass enable_channel=<name> to enable specific channels."
         ),
         parameters=[],
@@ -48,32 +50,33 @@ DETAILS: dict[str, OperationDetail] = {
 }
 
 
-async def execute(args: dict[str, Any]) -> ExecutionResult:
-    from bub.channels.manager import ChannelManager
-    from bub.framework import BubFramework
-
-    framework = BubFramework()
+def execute(args: dict[str, Any]) -> ExecutionResult:
+    cmd = [sys.executable, "-m", "bub", "gateway"]
 
     workspace = args.get("workspace")
     if workspace:
-        framework.workspace = Path(workspace).resolve()
+        cmd.extend(["--workspace", workspace])
 
-    framework.load_hooks()
-
-    enabled: list[str] | None = None
     enable_channel = args.get("enable_channel")
     if enable_channel:
-        enabled = [enable_channel]
-
-    manager = ChannelManager(framework, enabled_channels=enabled)
+        cmd.extend(["--enable-channel", enable_channel])
 
     try:
-        await manager.listen_and_run()
-        return ExecutionResult(data={"ok": True})
+        result = subprocess.run(cmd, check=False)
+        return ExecutionResult(
+            data={
+                "ok": result.returncode == 0,
+                "returncode": result.returncode,
+            }
+        )
     except KeyboardInterrupt:
         return ExecutionResult(data={"ok": True, "stopped": "interrupted"})
+    except FileNotFoundError:
+        return ExecutionResult(
+            data={"ok": False, "error": "bub not found in current environment"}
+        )
 
 
 _EXECUTE: dict[str, tuple[bool, Any]] = {
-    "gateway.start": (True, execute),
+    "gateway.start": (False, execute),
 }
