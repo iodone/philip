@@ -1,9 +1,27 @@
-"""PhilipAdapter — rub adapter aggregating all philip operations."""
+"""PhilipAdapter — rub adapter aggregating all philip operations.
+
+Supports extension via the ``philip.extensions`` entry-point group.
+External packages can register additional operations that are merged
+into the philip CLI and the ``rub philip://`` protocol.
+
+Example (in an external package's ``pyproject.toml``)::
+
+    [project.entry-points.'philip.extensions']
+    my-feature = "my_pkg.cli:MyExtension"
+
+The entry point must load to a module or object exposing:
+
+- ``OPERATIONS: list[Operation]``
+- ``DETAILS: dict[str, OperationDetail]``
+- ``_EXECUTE: dict[str, (is_async, execute_fn)]``
+"""
 
 from __future__ import annotations
 
+import importlib.metadata
 from typing import Any
 
+from loguru import logger
 from rub.adapter import Adapter, ExecutionResult
 from rub.schema import Operation, OperationDetail
 
@@ -26,6 +44,49 @@ from philip.cli.wiki import (
 from philip.cli.wiki import (
     OPERATIONS as _WIKI_OPS,
 )
+
+
+# ---------------------------------------------------------------------------
+# Extension discovery
+# ---------------------------------------------------------------------------
+
+
+def _load_extensions() -> tuple[
+    list[Operation], dict[str, OperationDetail], dict[str, tuple[bool, Any]]
+]:
+    """Scan ``philip.extensions`` entry points and return merged registries."""
+    ops: list[Operation] = []
+    details: dict[str, OperationDetail] = {}
+    dispatch: dict[str, tuple[bool, Any]] = {}
+
+    eps = importlib.metadata.entry_points(group="philip.extensions")
+    for ep in eps:
+        try:
+            ext = ep.load()
+        except Exception:
+            logger.exception("Failed to load philip extension: %s", ep.name)
+            continue
+
+        ext_ops = getattr(ext, "OPERATIONS", None) or []
+        ext_details = getattr(ext, "DETAILS", None) or {}
+        ext_dispatch = getattr(ext, "_EXECUTE", None) or {}
+
+        if not ext_ops and not ext_details:
+            logger.warning(
+                "Extension %s has no OPERATIONS or DETAILS, skipping", ep.name
+            )
+            continue
+
+        ops.extend(ext_ops)
+        details.update(ext_details)
+        dispatch.update(ext_dispatch)
+        logger.info(
+            "Loaded philip extension: %s (%d operations)",
+            ep.name,
+            len(ext_ops),
+        )
+
+    return ops, details, dispatch
 
 
 # ---------------------------------------------------------------------------
@@ -52,6 +113,12 @@ for op_id, fn in _WIKI_EXECUTE.items():
     _DISPATCH[op_id] = (False, fn)
 for op_id, fn in _FINANCE_EXECUTE.items():
     _DISPATCH[op_id] = (False, fn)
+
+# Merge extensions
+_ext_ops, _ext_details, _ext_dispatch = _load_extensions()
+_ALL_OPERATIONS.extend(_ext_ops)
+_ALL_DETAILS.update(_ext_details)
+_DISPATCH.update(_ext_dispatch)
 
 
 # ---------------------------------------------------------------------------

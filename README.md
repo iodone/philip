@@ -243,6 +243,70 @@ curl -s http://localhost:8420/rpc \
 | `WEIXIN_BASE_URL` | 微信 API 基础地址 | ❌ |
 | `WEIXIN_ACCOUNT_ID` | 微信账号 ID | ❌ |
 
+## 扩展 Philip CLI
+
+Philip 支持通过 entry-point 机制扩展 CLI，在不修改 philip 源码的情况下添加自定义 operation。
+
+### 创建扩展包
+
+1. 创建一个 Python 包，实现 operations 模块：
+
+```python
+# my_pkg/cli/my_feature.py
+from rub.schema import Operation, OperationDetail
+
+OPERATIONS = [
+    Operation(
+        operation_id="my-feature.hello",
+        display_name="Hello",
+        description="Say hello from my extension",
+        parameters=[],
+    ),
+]
+
+DETAILS = {
+    "my-feature.hello": OperationDetail(
+        operation_id="my-feature.hello",
+        display_name="Hello",
+        description="Say hello from my extension",
+        parameters=[],
+        invocation_examples=["philip my-feature.hello"],
+    ),
+}
+
+def execute(args):
+    from rub.adapter import ExecutionResult
+    return ExecutionResult(data={"message": "Hello from extension!"})
+
+_EXECUTE = {
+    "my-feature.hello": (False, execute),
+}
+```
+
+2. 在 `pyproject.toml` 中声明 entry point：
+
+```toml
+[project.entry-points.'philip.extensions']
+my-feature = "my_pkg.cli.my_feature"
+```
+
+3. 安装扩展包后，philip CLI 和 `rub philip://` 自动发现并合并扩展 operations：
+
+```bash
+pip install my-pkg
+philip -h                    # 可以看到 my-feature.hello
+philip my-feature.hello      # 调用扩展 operation
+rub philip:// my-feature.hello  # 同样可用
+```
+
+### 扩展约定
+
+- `OPERATIONS` — `list[Operation]`，声明 operation 的 ID 和描述
+- `DETAILS` — `dict[str, OperationDetail]`，operation 的详细 schema（参数、示例等）
+- `_EXECUTE` — `dict[str, tuple[bool, Callable]]`，`operation_id → (is_async, execute_fn)`
+- operation ID 建议用 `扩展名.操作名` 的命名空间格式，避免冲突
+- execute 函数签名为 `fn(args: dict) -> ExecutionResult`
+
 ## 文档
 
 - [Docker 部署指南](docs/DOCKER_USAGE.md) — 容器模式部署、调试、COW 沙箱
