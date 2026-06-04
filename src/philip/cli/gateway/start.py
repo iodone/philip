@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from pathlib import Path
 from typing import Any
 
@@ -49,7 +48,7 @@ DETAILS: dict[str, OperationDetail] = {
 }
 
 
-def execute(args: dict[str, Any]) -> ExecutionResult:
+async def execute(args: dict[str, Any]) -> ExecutionResult:
     from bub.channels.manager import ChannelManager
     from bub.framework import BubFramework
 
@@ -69,12 +68,12 @@ def execute(args: dict[str, Any]) -> ExecutionResult:
     manager = ChannelManager(framework, enabled_channels=enabled)
 
     try:
-        asyncio.run(manager.listen_and_run())
+        await manager.listen_and_run()
         return ExecutionResult(data={"ok": True})
     except KeyboardInterrupt:
         return ExecutionResult(data={"ok": True, "stopped": "interrupted"})
 
 
 _EXECUTE: dict[str, tuple[bool, Any]] = {
-    "gateway.start": (False, execute),
+    "gateway.start": (True, execute),
 }
