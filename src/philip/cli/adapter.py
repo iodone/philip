@@ -81,7 +81,7 @@ def _load_extensions() -> tuple[
         details.update(ext_details)
         dispatch.update(ext_dispatch)
         logger.info(
-            "Loaded philip extension: %s (%d operations)",
+            "Loaded philip extension: {} ({} operations)",
             ep.name,
             len(ext_ops),
         )
