@@ -44,6 +44,15 @@ from philip.cli.wiki import (
 from philip.cli.wiki import (
     OPERATIONS as _WIKI_OPS,
 )
+from philip.cli.gateway import (
+    _EXECUTE as _GATEWAY_EXECUTE,
+)
+from philip.cli.gateway import (
+    DETAILS as _GATEWAY_DETAILS,
+)
+from philip.cli.gateway import (
+    OPERATIONS as _GATEWAY_OPS,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -97,12 +106,14 @@ _ALL_OPERATIONS: list[Operation] = [
     *chat.OPERATIONS,
     *_WIKI_OPS,
     *_FINANCE_OPS,
+    *_GATEWAY_OPS,
 ]
 
 _ALL_DETAILS: dict[str, OperationDetail] = {
     **chat.DETAILS,
     **_WIKI_DETAILS,
     **_FINANCE_DETAILS,
+    **_GATEWAY_DETAILS,
 }
 
 # operation_id → (is_async, execute_fn)
@@ -112,6 +123,8 @@ for op in chat.OPERATIONS:
 for op_id, fn in _WIKI_EXECUTE.items():
     _DISPATCH[op_id] = (False, fn)
 for op_id, fn in _FINANCE_EXECUTE.items():
+    _DISPATCH[op_id] = (False, fn)
+for op_id, fn in _GATEWAY_EXECUTE.items():
     _DISPATCH[op_id] = (False, fn)
 
 # Merge extensions
