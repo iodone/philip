@@ -60,7 +60,7 @@ def execute(args: dict[str, Any]) -> ExecutionResult:
 
     workspace = args.get("workspace")
     if not workspace:
-        load_dotenv()
+        load_dotenv(override=True)
         ws = os.environ.get("BUB_WORKSPACE")
         if ws:
             workspace = str(Path(ws).expanduser().resolve())
