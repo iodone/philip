@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
+from pathlib import Path
 from typing import Any
 
 from rub.adapter import ExecutionResult
@@ -23,10 +25,10 @@ DETAILS: dict[str, OperationDetail] = {
         operation_id="gateway.start",
         display_name="Start Gateway",
         description=(
-            "Start Bub message listeners. Runs `bub gateway` as a subprocess"
-            " to avoid event loop conflicts with lark_oapi's WebSocket client."
-            " Pass enable_channel=<name> to enable specific channels."
-            " Bub reads workspace config from .env automatically."
+            "Start Bub message listeners. Runs `bub -w <workspace> gateway`"
+            " as a subprocess to avoid event loop conflicts with lark_oapi's"
+            " WebSocket client. Pass enable_channel=<name> to enable specific"
+            " channels. Bub reads workspace from .env if not specified."
         ),
         parameters=[],
         input_schema={
@@ -36,18 +38,33 @@ DETAILS: dict[str, OperationDetail] = {
                     "type": "string",
                     "description": "Channel name to enable. Omit for all channels.",
                 },
+                "workspace": {
+                    "type": "string",
+                    "description": "Path to the workspace directory. Omit to use BUB_WORKSPACE from .env.",
+                },
             },
         },
         invocation_examples=[
             "philip gateway.start",
             "philip gateway.start enable_channel=telegram",
+            "philip gateway.start workspace=/path/to/workspace",
         ],
     ),
 }
 
 
 def execute(args: dict[str, Any]) -> ExecutionResult:
-    cmd = [sys.executable, "-m", "bub", "gateway"]
+    cmd = [sys.executable, "-m", "bub"]
+
+    workspace = args.get("workspace")
+    if not workspace:
+        ws = os.environ.get("BUB_WORKSPACE")
+        if ws:
+            workspace = str(Path(ws).expanduser().resolve())
+    if workspace:
+        cmd.extend(["-w", workspace])
+
+    cmd.append("gateway")
 
     enable_channel = args.get("enable_channel")
     if enable_channel:
