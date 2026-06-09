@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from typing import Any
@@ -53,16 +54,17 @@ DETAILS: dict[str, OperationDetail] = {
 def execute(args: dict[str, Any]) -> ExecutionResult:
     cmd = [sys.executable, "-m", "bub", "gateway"]
 
-    workspace = args.get("workspace")
-    if workspace:
-        cmd.extend(["--workspace", workspace])
-
     enable_channel = args.get("enable_channel")
     if enable_channel:
         cmd.extend(["--enable-channel", enable_channel])
 
+    env = os.environ.copy()
+    workspace = args.get("workspace")
+    if workspace:
+        env["BUB_WORKSPACE"] = workspace
+
     try:
-        result = subprocess.run(cmd, check=False)
+        result = subprocess.run(cmd, check=False, env=env)
         return ExecutionResult(
             data={
                 "ok": result.returncode == 0,
