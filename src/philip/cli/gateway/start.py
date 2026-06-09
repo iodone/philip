@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import subprocess
 import sys
 from typing import Any
@@ -27,6 +26,7 @@ DETAILS: dict[str, OperationDetail] = {
             "Start Bub message listeners. Runs `bub gateway` as a subprocess"
             " to avoid event loop conflicts with lark_oapi's WebSocket client."
             " Pass enable_channel=<name> to enable specific channels."
+            " Bub reads workspace config from .env automatically."
         ),
         parameters=[],
         input_schema={
@@ -34,18 +34,13 @@ DETAILS: dict[str, OperationDetail] = {
             "properties": {
                 "enable_channel": {
                     "type": "string",
-                    "description": "Channel name to enable (can be repeated). Omit for all channels.",
-                },
-                "workspace": {
-                    "type": "string",
-                    "description": "Path to the workspace directory",
+                    "description": "Channel name to enable. Omit for all channels.",
                 },
             },
         },
         invocation_examples=[
             "philip gateway.start",
             "philip gateway.start enable_channel=telegram",
-            "philip gateway.start workspace=/path/to/workspace",
         ],
     ),
 }
@@ -58,13 +53,8 @@ def execute(args: dict[str, Any]) -> ExecutionResult:
     if enable_channel:
         cmd.extend(["--enable-channel", enable_channel])
 
-    env = os.environ.copy()
-    workspace = args.get("workspace")
-    if workspace:
-        env["BUB_WORKSPACE"] = workspace
-
     try:
-        result = subprocess.run(cmd, check=False, env=env)
+        result = subprocess.run(cmd, check=False)
         return ExecutionResult(
             data={
                 "ok": result.returncode == 0,
