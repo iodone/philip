@@ -8,7 +8,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
+from loguru import logger
 
 from rub.adapter import ExecutionResult
 from rub.schema import Operation, OperationDetail
@@ -59,13 +60,17 @@ def execute(args: dict[str, Any]) -> ExecutionResult:
     cmd = [sys.executable, "-m", "bub"]
 
     workspace = args.get("workspace")
+    logger.info("[gateway.start] args={}, workspace={}", args, workspace)
     if not workspace:
-        load_dotenv(override=True)
+        load_dotenv(find_dotenv(usecwd=True), override=True)
         ws = os.environ.get("BUB_WORKSPACE")
+        logger.info("[gateway.start] BUB_WORKSPACE from env={}", ws)
         if ws:
             workspace = str(Path(ws).expanduser().resolve())
     if workspace:
-        cmd.extend(["-w", str(Path(workspace).expanduser().resolve())])
+        resolved = str(Path(workspace).expanduser().resolve())
+        logger.info("[gateway.start] resolved workspace={}", resolved)
+        cmd.extend(["-w", resolved])
 
     cmd.append("gateway")
 
