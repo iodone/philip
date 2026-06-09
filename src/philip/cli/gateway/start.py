@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
-from loguru import logger
 
 from rub.adapter import ExecutionResult
 from rub.schema import Operation, OperationDetail
@@ -60,11 +59,9 @@ def execute(args: dict[str, Any]) -> ExecutionResult:
     cmd = [sys.executable, "-m", "bub"]
 
     workspace = args.get("workspace")
-    logger.debug("gateway.start args={}, workspace={}", args, workspace)
     if not workspace:
         load_dotenv()
         ws = os.environ.get("BUB_WORKSPACE")
-        logger.debug("gateway.start BUB_WORKSPACE from env={}", ws)
         if ws:
             workspace = str(Path(ws).expanduser().resolve())
     if workspace:
@@ -75,8 +72,6 @@ def execute(args: dict[str, Any]) -> ExecutionResult:
     enable_channel = args.get("enable_channel")
     if enable_channel:
         cmd.extend(["--enable-channel", enable_channel])
-
-    logger.debug("gateway.start cmd={}", cmd)
 
     try:
         result = subprocess.run(cmd, check=False)
