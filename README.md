@@ -15,7 +15,7 @@ uv tool install git+https://github.com/iodone/philip.git
 ```bash
 git clone https://github.com/iodone/philip.git
 cd philip
-uv tool install . --force
+uv tool install . --force --reinstall
 ```
 
 安装后 `philip` 命令全局可用。
