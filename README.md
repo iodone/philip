@@ -1,219 +1,139 @@
 # Philip
 
-Philip 是 [Bub](https://github.com/bubbuild/bub) 生态的主入口项目，提供两部分能力：
-
-1. **Bub Distribution** — 多渠道 AI Agent 网关，支持飞书、Telegram、微信、JSON-RPC，通过 [boxsh](https://github.com/xicilion/boxsh) 沙箱隔离执行。负责启动、沙箱管理和 plugin 组装。
-2. **CLI Capabilities** — 命令行工具集，管理 Bub workspace，并提供 gateway 本地联调 client。当前重点是 `wiki` 和 `rpc chat`：`wiki` 负责 workspace 初始化、知识库搜索、图分析、同步；`rpc chat` 用于验证 JSON-RPC channel 的会话与流式行为。
-
-<!-- TODO: 加一张飞书对话截图或终端运行截图 -->
-
-## 项目结构
-
-```
-philip/
-├── src/
-│   └── philip/                  # Python 包
-│       ├── capabilities/       # CLI 能力模块
-│       │   └── wiki/           # 知识库管理
-│       ├── channels/           # Bub Channel 插件
-│       │   └── jsonrpc_channel.py  # JSON-RPC 2.0 通道
-│       ├── cli/                # CLI 入口（rub standalone_cli）
-│       ├── plugins/            # Bub 插件
-│       ├── server/             # JSON-RPC 服务端实现
-│       └── skills/             # 内置 agent skill
-├── tests/                      # 单元测试
-├── docs/                       # 详细文档
-│   ├── DOCKER_USAGE.md         # Docker 部署指南
-│   ├── JSONRPC_CHANNEL.md      # JSON-RPC 通道 API 文档
-│   └── WIKI.md                 # Wiki CLI 详细用法
-├── run-host.sh                 # 宿主机模式启动脚本
-├── entrypoint.sh               # Docker 容器入口
-├── docker-compose.yml          # Docker 模式编排
-├── Dockerfile                  # 容器镜像定义
-├── .env.example                # 配置模板
-├── pyproject.toml              # Python 依赖
-└── AGENTS.md                   # Agent 运行规则
-```
+Philip 是 [Bub](https://github.com/bubbuild/bub) 生态的主入口，统一了 gateway 启动、workspace 管理和 CLI 工具。
 
 ## 安装
-
-### CLI 工具（推荐）
-
-使用 `uv tool install` 安装 `philip` CLI，命令会注册到系统 PATH，agent 和 bash 脚本可直接调用：
 
 ```bash
 uv tool install git+https://github.com/iodone/philip.git
 ```
 
-安装后即可在任意目录使用：
-
-```bash
-philip wiki.init directory=/path/to/workspace
-philip wiki.search query="agent architecture"
-philip wiki.sync
-philip rpc.chat -h
-```
-
-### 从源码开发
-
-```bash
-git clone https://github.com/iodone/philip.git
-cd philip
-uv sync
-```
+安装后 `philip` 命令全局可用。
 
 ## 快速开始
 
-### 1. 初始化 Wiki Workspace
-
-使用 `philip wiki.init` 初始化一个 workspace。创建完整目录结构、模板文件，并自动将内置 skill 安装到 `.agents/skills/`：
+### 1. 初始化 Workspace
 
 ```bash
 philip wiki.init directory=/path/to/workspace
 ```
 
-初始化后的 workspace 结构：
+创建完整目录结构、模板文件和内置 skill。详细结构见 [docs/WIKI.md](docs/WIKI.md)。
 
-```
-/path/to/workspace/
-├── AGENTS.md               # Agent session 入口协议
-├── README.md               # Workspace 总览
-├── rules/
-│   ├── SOUL.md             # Agent 身份定义
-│   ├── USER.md             # 用户偏好与原则
-│   ├── COMMUNICATION.md    # 协作方式
-│   ├── SECURITY.md         # 安全规则
-│   ├── WORKSPACE.md        # 目录路由速查
-│   ├── axioms/             # 稳定判断规则
-│   └── skills/             # Skill 索引
-├── .agents/skills/
-│   └── workflow-llm-wiki/SKILL.md  # 内置 wiki 操作 skill
-├── contexts/               # 输入层（ingest 材料）
-│   ├── blog/               # 博客草稿
-│   ├── clippings/          # 外部原始资料
-│   ├── daily_records/      # 日级记录
-│   ├── life_record/        # 生活观察
-│   ├── survey_sessions/    # 调研过程
-│   └── thought_review/     # 深度分析
-├── wiki/
-│   ├── pages/              # Wiki 页面（Obsidian 兼容）
-│   ├── wiki-purpose.md     # Wiki 目的与范围
-│   ├── wiki-schema.md      # 页面规范
-│   ├── wiki-agent.md       # Agent 行为规则
-│   └── wiki-log.md         # 操作日志
-└── .llm-wiki/
-    └── config.toml         # Vault 配置
-```
-
-### 2. 配置并启动 Bub 网关
-
-Bub distribution 部分需要从源码运行：
+### 2. 配置并启动 Gateway
 
 ```bash
-cp .env.example .env
-# 编辑 .env，填入 BUB_MODEL、BUB_API_KEY、BUB_WORKSPACE（指向上面的 workspace）
+cp /path/to/workspace/.env.example /path/to/workspace/.env
+# 编辑 .env，填入 BUB_MODEL、BUB_API_KEY、BUB_WORKSPACE
 
-# 宿主机开发模式（无 sandbox）
-uv run bub -w /path/to/workspace gateway
+# 启动所有 channel
+philip gateway.start workspace=/path/to/workspace
 
-# 宿主机隔离模式（boxsh sandbox）
+# 只启动指定 channel
+philip gateway.start workspace=/path/to/workspace enable_channel=feishu
+
+# 宿主机沙箱模式（boxsh 隔离）
 ./run-host.sh
-
-# 或容器部署模式
-docker-compose up -d
 ```
 
-启动后，agent 会自动读取 workspace 中的 wiki skill，通过 `philip wiki.search`/`wiki.graph`/`wiki.sync` 等命令管理知识库。
-
-### 3. 验证 JSON-RPC Channel
-
-JSON-RPC 通道不是单独启动的服务，而是 **Bub gateway 自动加载的 channel 插件**。要启用它，先打开环境变量开关：
-
-```bash
-export BUB_JSONRPC_ENABLE=true
-```
-
-然后统一通过 gateway 启动：
-
-```bash
-uv run bub -w /path/to/workspace gateway
-```
-
-启动后默认监听：
-
-- `POST http://127.0.0.1:8420/rpc`
-- `GET ws://127.0.0.1:8420/ws`
-
-从源码仓库内联调时，推荐直接使用 repo 环境里的 CLI：
-
-```bash
-uv run philip rpc.chat
-uv run philip rpc.chat ws=true stream=true
-uv run philip rpc.chat session=demo-session
-```
-
-如果你已经通过 `pipx` 安装了最新 CLI，也可以直接使用：
+### 3. 本地联调
 
 ```bash
 philip rpc.chat
+philip rpc.chat ws=true stream=true
+philip rpc.chat session=demo-session
 ```
 
-## CLI Capabilities
+## CLI 命令
 
 ### Wiki
 
 | 命令 | 说明 |
 |:---|:---|
-| `philip wiki.init <dir>` | 初始化 workspace（目录结构 + 模板 + skill） |
-| `philip wiki.search <query>` | BM25 搜索（配置 DB9 后自动启用向量 + RRF 融合） |
-| `philip wiki.sync` | 变更检测（mtime + SHA-256），可选推送到 DB9 |
-| `philip wiki.graph` | 链接图分析：社区发现、hub 页、orphan 页、wanted 页 |
+| `philip wiki.init directory=<dir>` | 初始化 workspace |
+| `philip wiki.search query=<text>` | BM25 + 向量搜索 |
+| `philip wiki.sync` | 变更检测，可选推送到 DB9 |
+| `philip wiki.graph` | 链接图分析 |
 | `philip wiki.status` | wiki 健康概览 |
 
-详细用法见 [docs/WIKI.md](docs/WIKI.md)。
-
-### JSON-RPC
+### Gateway
 
 | 命令 | 说明 |
 |:---|:---|
-| `philip rpc.chat` | 交互式 REPL 客户端（HTTP 模式） |
+| `philip gateway.start` | 启动所有 message listener |
+| `philip gateway.start enable_channel=<name>` | 启动指定 channel |
+
+### RPC Chat
+
+| 命令 | 说明 |
+|:---|:---|
+| `philip rpc.chat` | 交互式 REPL（HTTP） |
 | `philip rpc.chat ws=true` | WebSocket 模式 |
-| `philip rpc.chat ws=true stream=true` | 流式输出模式 |
-| `philip rpc.chat session=<id>` | 指定 session ID |
+| `philip rpc.chat ws=true stream=true` | 流式输出 |
 
-JSON-RPC 通道作为 Bub gateway 插件自动加载，支持 HTTP (`POST /rpc`) 和 WebSocket (`GET /ws`) 两种传输方式。适合本地调试、CLI 交互和外部系统集成。
+## 扩展
 
-协议约束：
+Philip 通过 entry-point 机制支持 CLI 扩展。扩展包将自定义 operation 注册到 `philip` 命令下。
 
-- `session_id` 是业务会话键，对应 Bub tape/chat
-- JSON-RPC 顶层 `id` 只做单次 request correlation
-- 同一个 `session_id` 支持并发 unary `chat.send`
-- 同一个 `session_id` 的并发 `chat.stream` 会被显式拒绝，避免隐式覆盖
+### 创建扩展
 
-启用开关：
+```python
+# my_pkg/echo.py
+from rub.schema import Operation, OperationDetail
+from rub.adapter import ExecutionResult
 
-- `BUB_JSONRPC_ENABLE=true`：启用 JSON-RPC channel
-- 兼容别名：`BUB_JSONRPC_ENABLED=true`
+OPERATIONS = [Operation(operation_id="my.echo", display_name="Echo", description="Echo input")]
+DETAILS = {"my.echo": OperationDetail(operation_id="my.echo", display_name="Echo", description="Echo input", parameters=[], invocation_examples=["philip my.echo message=hello"])}
 
-```bash
-# 快速测试
-curl -s http://localhost:8420/rpc \
-  -H 'Content-Type: application/json' \
-  -d '{"jsonrpc":"2.0","id":"1","method":"chat.send","params":{"session_id":"test","message":"hello"}}'
+def execute(args):
+    return ExecutionResult(data={"echo": args.get("message", "")})
+
+_EXECUTE = {"my.echo": (False, execute)}
 ```
 
-详细 API 文档见 [docs/JSONRPC_CHANNEL.md](docs/JSONRPC_CHANNEL.md)。
+```toml
+# pyproject.toml
+[project]
+name = "my-tools"
+dependencies = ["philip @ git+https://github.com/iodone/philip.git@main"]
+
+[project.scripts]
+philip = "philip.cli.__main__:app"
+
+[project.entry-points.'philip.extensions']
+my-tools = "my_pkg.echo"
+```
+
+```bash
+uv tool install . --force
+philip my.echo message=hello
+```
+
+### 扩展约定
+
+- `OPERATIONS: list[Operation]` — operation 声明
+- `DETAILS: dict[str, OperationDetail]` — 参数 schema
+- `_EXECUTE: dict[str, tuple[bool, Callable]]` — `operation_id → (is_async, execute_fn)`
+- operation ID 用 `扩展名.操作名` 格式避免冲突
+
+### Bub Agent 模式
+
+bub agent 通过 bash tool 调用 `philip` 时，使用的是**项目 venv**（不是全局安装）。扩展需安装到项目 venv：
+
+```bash
+cd /path/to/workspace
+uv add git+https://github.com/iodone/philip.git
+uv add -e /path/to/my-tools
+```
 
 ## 配置
-
-### 通用配置
 
 | 配置项 | 说明 | 必需 |
 |--------|------|:----:|
 | `BUB_MODEL` | LLM 模型，格式 `provider:model_id` | ✅ |
 | `BUB_API_KEY` | API 密钥 | ✅ |
-| `BUB_API_BASE` | API 端点（自定义模型时使用） | ❌ |
 | `BUB_WORKSPACE` | Agent 工作空间路径 | ✅ |
+| `BUB_API_BASE` | API 端点（自定义模型时使用） | ❌ |
 
 ### 飞书
 
@@ -221,107 +141,25 @@ curl -s http://localhost:8420/rpc \
 |--------|------|:----:|
 | `BUB_FEISHU_APP_ID` | 应用 App ID | ✅ |
 | `BUB_FEISHU_APP_SECRET` | 应用 App Secret | ✅ |
-| `BUB_FEISHU_VERIFICATION_TOKEN` | Webhook 验证 Token | ❌ |
-| `BUB_FEISHU_ENCRYPT_KEY` | Webhook 事件加密密钥 | ❌ |
-| `BUB_FEISHU_ALLOW_USERS` | 允许的用户 open_id，逗号分隔 | ❌ |
-| `BUB_FEISHU_ALLOW_CHATS` | 允许的 Chat ID，逗号分隔 | ❌ |
-| `BUB_FEISHU_BOT_OPEN_ID` | 机器人 open_id，用于群聊 @检测 | ❌ |
-| `BUB_FEISHU_BOT_NAME` | 机器人显示名称，用于 @名称 匹配 | ❌ |
+| `BUB_FEISHU_BOT_OPEN_ID` | 机器人 open_id | ❌ |
 
 ### Telegram
 
 | 配置项 | 说明 | 必需 |
 |--------|------|:----:|
-| `BUB_TELEGRAM_TOKEN` | Bot Token（@BotFather 获取） | ✅ |
-| `BUB_TELEGRAM_ALLOW_USERS` | 允许的用户 ID，逗号分隔 | ❌ |
-| `BUB_TELEGRAM_ALLOW_CHATS` | 允许的 Chat ID，逗号分隔 | ❌ |
+| `BUB_TELEGRAM_TOKEN` | Bot Token | ✅ |
 
 ### 微信
 
 | 配置项 | 说明 | 必需 |
 |--------|------|:----:|
 | `WEIXIN_BASE_URL` | 微信 API 基础地址 | ❌ |
-| `WEIXIN_ACCOUNT_ID` | 微信账号 ID | ❌ |
-
-## 扩展 Philip CLI
-
-Philip 支持通过 entry-point 机制扩展 CLI，在不修改 philip 源码的情况下添加自定义 operation。
-
-扩展包必须将 `philip` 声明为依赖，并提供 `[project.scripts]` 入口，这样 `uv tool install .` 会把 philip 和扩展装进同一个隔离环境，entry point 自动发现。
-
-### 创建扩展包
-
-1. 创建一个 Python 包，实现 operations 模块：
-
-```python
-# my_pkg/cli/my_feature.py
-from rub.schema import Operation, OperationDetail
-
-OPERATIONS = [
-    Operation(
-        operation_id="my-feature.hello",
-        display_name="Hello",
-        description="Say hello from my extension",
-        parameters=[],
-    ),
-]
-
-DETAILS = {
-    "my-feature.hello": OperationDetail(
-        operation_id="my-feature.hello",
-        display_name="Hello",
-        description="Say hello from my extension",
-        parameters=[],
-        invocation_examples=["philip my-feature.hello"],
-    ),
-}
-
-def execute(args):
-    from rub.adapter import ExecutionResult
-    return ExecutionResult(data={"message": "Hello from extension!"})
-
-_EXECUTE = {
-    "my-feature.hello": (False, execute),
-}
-```
-
-2. 在 `pyproject.toml` 中声明 philip 依赖、scripts 入口和 entry point：
-
-```toml
-[project]
-name = "my-tools"
-dependencies = [
-    "philip @ git+https://github.com/iodone/philip.git@main",
-]
-
-[project.scripts]
-philip = "philip.cli.__main__:app"
-
-[project.entry-points.'philip.extensions']
-my-feature = "my_pkg.cli.my_feature"
-```
-
-3. 安装扩展包：
-
-```bash
-uv tool install . --force
-philip -h                    # 可以看到 my-feature.hello
-philip my-feature.hello      # 调用扩展 operation
-```
-
-### 扩展约定
-
-- `OPERATIONS` — `list[Operation]`，声明 operation 的 ID 和描述
-- `DETAILS` — `dict[str, OperationDetail]`，operation 的详细 schema（参数、示例等）
-- `_EXECUTE` — `dict[str, tuple[bool, Callable]]`，`operation_id → (is_async, execute_fn)`
-- operation ID 建议用 `扩展名.操作名` 的命名空间格式，避免冲突
-- execute 函数签名为 `fn(args: dict) -> ExecutionResult`
 
 ## 文档
 
-- [Docker 部署指南](docs/DOCKER_USAGE.md) — 容器模式部署、调试、COW 沙箱
-- [CLI Capabilities — Wiki](docs/WIKI.md) — wiki 命令详细用法、DB9 配置、workspace 结构
-- [JSON-RPC Channel](docs/JSONRPC_CHANNEL.md) — JSON-RPC 2.0 通道 API、WebSocket 流式协议、CLI 客户端
+- [Wiki CLI 详细用法](docs/WIKI.md)
+- [JSON-RPC Channel API](docs/JSONRPC_CHANNEL.md)
+- [Docker 部署指南](docs/DOCKER_USAGE.md)
 
 ## License
 
