@@ -162,7 +162,7 @@ run_supervised() {
 
 # If no arguments, start the gateway
 if [ $# -eq 0 ]; then
-    run_supervised "$SANDBOX_INIT && cd $SCRIPT_DIR && philip gateway.start workspace=$BUB_WORKSPACE"
+    run_supervised "$SANDBOX_INIT && cd $SCRIPT_DIR && uv run bub -w $BUB_WORKSPACE gateway"
 fi
 
 # If first argument is "shell" or "sh", launch boxsh native interactive shell
