@@ -4,8 +4,18 @@ Philip 是 [Bub](https://github.com/bubbuild/bub) 生态的主入口，统一了
 
 ## 安装
 
+从 GitHub 安装：
+
 ```bash
 uv tool install git+https://github.com/iodone/philip.git
+```
+
+从本地源码安装：
+
+```bash
+git clone https://github.com/iodone/philip.git
+cd philip
+uv tool install . --force
 ```
 
 安装后 `philip` 命令全局可用。
@@ -34,14 +44,6 @@ philip gateway.start workspace=/path/to/workspace enable_channel=feishu
 
 # 宿主机沙箱模式（boxsh 隔离）
 ./run-host.sh
-```
-
-### 3. 本地联调
-
-```bash
-philip rpc.chat
-philip rpc.chat ws=true stream=true
-philip rpc.chat session=demo-session
 ```
 
 ## CLI 命令
@@ -115,16 +117,6 @@ philip my.echo message=hello
 - `DETAILS: dict[str, OperationDetail]` — 参数 schema
 - `_EXECUTE: dict[str, tuple[bool, Callable]]` — `operation_id → (is_async, execute_fn)`
 - operation ID 用 `扩展名.操作名` 格式避免冲突
-
-### Bub Agent 模式
-
-bub agent 通过 bash tool 调用 `philip` 时，使用的是**项目 venv**（不是全局安装）。扩展需安装到项目 venv：
-
-```bash
-cd /path/to/workspace
-uv add git+https://github.com/iodone/philip.git
-uv add -e /path/to/my-tools
-```
 
 ## 配置
 
