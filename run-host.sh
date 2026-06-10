@@ -118,12 +118,17 @@ append_bind_if_dir wr "$HOME/Library/Application Support/lark-cli"
 # Git config and SSH keys (read-only, for git operations in sandbox)
 [ -f "$HOME/.gitconfig" ] && BOXSH_ARGS+=("--bind" "ro:$HOME/.gitconfig")
 append_bind_if_dir ro "$HOME/.ssh"
+# SSH agent socket — /private/tmp paths cannot be mounted in boxsh.
+# SSH key in ~/.ssh works directly if no passphrase.
+# HTTPS + token via git credential store.
+[ -f "$HOME/.git-credentials" ] && BOXSH_ARGS+=("--bind" "ro:$HOME/.git-credentials")
 
 # Sandbox init: HOME is the real user home, TMPDIR in BUB_HOME for isolation
 SANDBOX_INIT="export HOME=$HOME \
   TMPDIR=$BUB_HOME/tmp TEMP=$BUB_HOME/tmp TMP=$BUB_HOME/tmp \
   OPENCLAW_STATE_DIR=$BUB_WEIXIN_STATE_DIR \
   CLAWDBOT_STATE_DIR=$BUB_WEIXIN_STATE_DIR \
+  SSH_AUTH_SOCK=${SSH_AUTH_SOCK:-} \
   PATH=$UV_BIN_DIR:\$PATH \
   && mkdir -p $BUB_HOME/tmp $BUB_WORKSPACE/profiles"
 
