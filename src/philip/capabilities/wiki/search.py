@@ -1,10 +1,12 @@
-"""BM25 search engine with CJK tokenizer and RRF fusion."""
+"""BM25 + ripgrep search engine with CJK tokenizer and RRF fusion."""
 
 from __future__ import annotations
 
+import json
 import math
 import re
 from dataclasses import dataclass
+from pathlib import Path
 
 from philip.capabilities.wiki.wiki import WikiPage
 
@@ -136,6 +138,76 @@ def bm25_search(
             results.append(SearchResult(page=page, score=score))
 
     results.sort(key=lambda r: r.score, reverse=True)
+    return results[:limit]
+
+
+# ---------------------------------------------------------------------------
+# Grep search (ripgrep)
+# ---------------------------------------------------------------------------
+
+
+def grep_search(
+    wiki_dir: str,
+    query: str,
+    limit: int = 10,
+) -> list[SearchResult]:
+    """Run ripgrep across wiki markdown files and return matches.
+
+    Uses ripgrepy SDK. Returns one result per matching file with
+    score = match count (ranked by relevance).
+    """
+    try:
+        from ripgrepy import Ripgrepy
+    except ImportError:
+        return []
+
+    wiki_path = Path(wiki_dir)
+    if not wiki_path.exists():
+        return []
+
+    rg = Ripgrepy(query, str(wiki_path))
+    rg = rg.type_("md").json()
+
+    try:
+        raw = rg.run().as_string
+    except Exception:
+        return []
+
+    # Parse JSON lines output, group by file
+    matches: dict[str, int] = {}
+    for line in raw.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if entry.get("type") != "match":
+            continue
+        path = entry.get("data", {}).get("path", {}).get("text", "")
+        if path:
+            matches[path] = matches.get(path, 0) + 1
+
+    if not matches:
+        return []
+
+    # Convert file paths to slugs and build results
+    results: list[SearchResult] = []
+    for file_path, count in sorted(matches.items(), key=lambda x: x[1], reverse=True):
+        p = Path(file_path)
+        # Derive slug: strip wiki_dir prefix and .md extension
+        try:
+            rel = p.relative_to(wiki_path)
+        except ValueError:
+            continue
+        slug = str(rel.with_suffix("")).replace("/", ".")
+
+        results.append(SearchResult(
+            page=WikiPage(path=p, relative_path=str(rel), slug=slug, title=slug),
+            score=float(count),
+        ))
+
     return results[:limit]
 
 

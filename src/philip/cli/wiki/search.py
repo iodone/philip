@@ -1,4 +1,4 @@
-"""wiki.search — Search wiki pages (BM25 + vector)."""
+"""wiki.search — Search wiki pages (BM25 + grep)."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from rub.errors import InvalidArgumentsError
 from rub.schema import Operation, OperationDetail, Parameter
 
 from philip.capabilities.wiki.config import load_config, require_vault_root, vault_paths
-from philip.capabilities.wiki.search import bm25_search, rrf_merge
+from philip.capabilities.wiki.search import bm25_search, grep_search, rrf_merge
 from philip.capabilities.wiki.wiki import load_wiki_pages
 
 # ---------------------------------------------------------------------------
@@ -20,7 +20,7 @@ OPERATIONS: list[Operation] = [
     Operation(
         operation_id="wiki.search",
         display_name="Wiki Search",
-        description="Search wiki pages (BM25 + vector search if configured)",
+        description="Search wiki pages (BM25 + ripgrep)",
         parameters=[
             Parameter(
                 name="query",
@@ -34,12 +34,6 @@ OPERATIONS: list[Operation] = [
                 default=10,
                 description="Max results",
             ),
-            Parameter(
-                name="bm25_only",
-                param_type="boolean",
-                default=False,
-                description="Force BM25-only search",
-            ),
         ],
     ),
 ]
@@ -48,15 +42,12 @@ DETAILS: dict[str, OperationDetail] = {
     "wiki.search": OperationDetail(
         operation_id="wiki.search",
         display_name="Wiki Search",
-        description=(
-            "Search wiki pages using BM25" " (and vector search if DB9 is configured)."
-        ),
+        description="Search wiki pages using BM25 ranking + ripgrep exact match.",
         parameters=OPERATIONS[0].parameters,
         return_type="object",
         invocation_examples=[
             "philip wiki.search query=machine learning",
             "philip wiki.search query=test limit=5",
-            "philip wiki.search query=test bm25_only=true",
         ],
     ),
 }
@@ -73,7 +64,6 @@ def execute(args: dict[str, Any]) -> ExecutionResult:
         raise InvalidArgumentsError("Missing required parameter: query")
 
     limit = int(args.get("limit", 10))
-    bm25_only = bool(args.get("bm25_only", False))
 
     root = require_vault_root()
     config = load_config(root)
@@ -86,37 +76,22 @@ def execute(args: dict[str, Any]) -> ExecutionResult:
         )
 
     pages_by_slug = {p.slug: p for p in pages}
+
+    # BM25 — fuzzy ranked search
     bm25_results = bm25_search(pages, query, limit * 2)
 
-    vector_results: list[dict[str, float]] = []
-    hybrid_mode = False
+    # Grep — exact/regex search via ripgrep
+    grep_results = grep_search(str(paths.wiki), query, limit * 2)
 
-    if not bm25_only and config.db9 and config.db9.url:
-        try:
-            from philip.capabilities.wiki.db9 import create_db9_client
+    # Merge or fallback
+    bm25_dicts = [{"slug": r.page.slug, "score": r.score} for r in bm25_results]
+    grep_dicts = [{"slug": r.page.slug, "score": r.score} for r in grep_results]
 
-            db9 = create_db9_client(config)
-            if db9:
-                db_results = db9.vector_search(query, limit * 2)
-                vector_results = [
-                    {"slug": r["slug"], "score": r["similarity"]} for r in db_results
-                ]
-                hybrid_mode = len(vector_results) > 0
-                db9.close()
-        except Exception:
-            pass
-
-    if hybrid_mode:
-        final_results = rrf_merge(
-            [{"slug": r.page.slug, "score": r.score} for r in bm25_results],
-            vector_results,
-            limit,
-        )
+    if grep_dicts:
+        final_results = rrf_merge(bm25_dicts, grep_dicts, limit)
         mode = "hybrid"
     else:
-        final_results = [
-            {"slug": r.page.slug, "score": r.score} for r in bm25_results[:limit]
-        ]
+        final_results = bm25_dicts[:limit]
         mode = "bm25"
 
     enriched = []

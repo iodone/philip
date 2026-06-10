@@ -32,14 +32,8 @@ class VaultSection:
 
 
 @dataclass(frozen=True)
-class DB9Section:
-    url: str = ""
-
-
-@dataclass(frozen=True)
 class WikiConfig:
     vault: VaultSection = field(default_factory=VaultSection)
-    db9: DB9Section | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -143,10 +137,7 @@ def load_config(vault_root: str | Path) -> WikiConfig:
         pages_subdir=vault_raw.get("pages_subdir", "pages"),
     )
 
-    db9_raw = data.get("db9")
-    db9 = DB9Section(url=db9_raw["url"]) if db9_raw and db9_raw.get("url") else None
-
-    return WikiConfig(vault=vault, db9=db9)
+    return WikiConfig(vault=vault)
 
 
 # ---------------------------------------------------------------------------
