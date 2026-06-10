@@ -1,25 +1,51 @@
-"""BM25 + ripgrep search engine with CJK tokenizer and RRF fusion."""
+"""Block-level BM25 + ripgrep search with tiered ranking.
+
+Design: docs/llm-wiki-search-architecture.md
+"""
 
 from __future__ import annotations
 
 import json
 import math
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
-from philip.capabilities.wiki.wiki import WikiPage
+# ---------------------------------------------------------------------------
+# Data models
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class Block:
+    """A chunk of markdown split by header boundaries."""
+
+    file_path: str
+    slug: str
+    header: str  # e.g. "### 慢查询排查"
+    content: str  # full block text including header
+    line_start: int
+    line_end: int
+
+
+@dataclass
+class SearchResult:
+    """A search hit with ranking metadata."""
+
+    block: Block
+    score: float
+    match_type: str  # "exact" | "semantic"
+
 
 # ---------------------------------------------------------------------------
 # CJK tokenizer
 # ---------------------------------------------------------------------------
 
-# Unicode ranges for CJK characters (unified + extension + compat + kana + hangul)
-_CJK_RE = re.compile(r"[一-鿿㐀-䶿豈-﫿" r"　-〿぀-ゟ゠-ヿ가-힯]")
+_CJK_RE = re.compile(r"[一-鿿㐀-䶿豈-﫿" r"　-〿぀-ゟ゠-ヿ가-힯]")
 
 
 def tokenize(text: str) -> list[str]:
-    """Tokenize *text* into words (split on whitespace) and CJK unigrams + bigrams."""
+    """Tokenize text into words (whitespace split) and CJK unigrams + bigrams."""
     tokens: list[str] = []
     normalized = text.lower()
     i = 0
@@ -28,13 +54,10 @@ def tokenize(text: str) -> list[str]:
     while i < len(normalized):
         ch = normalized[i]
         if _CJK_RE.match(ch):
-            # Flush non-CJK buffer
             if non_cjk_buf:
                 tokens.extend(t for t in non_cjk_buf.split() if t)
                 non_cjk_buf = ""
-            # Emit unigram
             tokens.append(ch)
-            # Emit bigram with next CJK char
             if i + 1 < len(normalized) and _CJK_RE.match(normalized[i + 1]):
                 tokens.append(ch + normalized[i + 1])
             i += 1
@@ -48,7 +71,65 @@ def tokenize(text: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# BM25 index
+# Markdown block parser
+# ---------------------------------------------------------------------------
+
+_HEADER_RE = re.compile(r"^(#{1,6})\s+")
+
+
+def parse_blocks(file_path: str, content: str, wiki_dir: str) -> list[Block]:
+    """Split markdown content into blocks by headers.
+
+    Each block carries its header, content, and line range.
+    Blocks without a header get header="".
+    """
+    p = Path(file_path)
+    try:
+        rel = p.relative_to(wiki_dir)
+    except ValueError:
+        rel = p
+    slug = str(rel.with_suffix("")).replace("/", ".")
+
+    lines = content.split("\n")
+    blocks: list[Block] = []
+    current_header = ""
+    current_lines: list[str] = []
+    line_start = 1
+
+    for i, line in enumerate(lines, 1):
+        if _HEADER_RE.match(line):
+            # Flush previous block
+            if current_lines:
+                blocks.append(Block(
+                    file_path=file_path,
+                    slug=slug,
+                    header=current_header,
+                    content="\n".join(current_lines),
+                    line_start=line_start,
+                    line_end=i - 1,
+                ))
+            current_header = line.strip()
+            current_lines = [line]
+            line_start = i
+        else:
+            current_lines.append(line)
+
+    # Final block
+    if current_lines:
+        blocks.append(Block(
+            file_path=file_path,
+            slug=slug,
+            header=current_header,
+            content="\n".join(current_lines),
+            line_start=line_start,
+            line_end=len(lines),
+        ))
+
+    return blocks
+
+
+# ---------------------------------------------------------------------------
+# BM25 index (block-level)
 # ---------------------------------------------------------------------------
 
 _K1 = 1.2
@@ -57,21 +138,20 @@ _B = 0.75
 
 @dataclass
 class _BM25Index:
-    df: dict[str, int]  # document frequency per token
-    tf: list[dict[str, int]]  # term frequency per document
-    doc_lengths: list[int]  # token count per document
-    avg_dl: float  # average document length
-    n: int  # total documents
+    df: dict[str, int]
+    tf: list[dict[str, int]]
+    doc_lengths: list[int]
+    avg_dl: float
+    n: int
 
 
-def _build_index(pages: list[WikiPage]) -> _BM25Index:
+def _build_block_index(blocks: list[Block]) -> _BM25Index:
     df: dict[str, int] = {}
     tf_list: list[dict[str, int]] = []
     doc_lengths: list[int] = []
 
-    for page in pages:
-        text = f"{page.title} {page.description or ''} {page.content}"
-        tokens = tokenize(text)
+    for block in blocks:
+        tokens = tokenize(block.content)
         doc_lengths.append(len(tokens))
 
         term_freq: dict[str, int] = {}
@@ -85,7 +165,7 @@ def _build_index(pages: list[WikiPage]) -> _BM25Index:
             df[term] = df.get(term, 0) + 1
 
     total_len = sum(doc_lengths)
-    n = len(pages)
+    n = len(blocks)
     avg_dl = total_len / n if n > 0 else 0.0
 
     return _BM25Index(df=df, tf=tf_list, doc_lengths=doc_lengths, avg_dl=avg_dl, n=n)
@@ -109,72 +189,60 @@ def _score_bm25(index: _BM25Index, query_tokens: list[str], doc_idx: int) -> flo
 
 
 # ---------------------------------------------------------------------------
-# Search API
+# BM25 search (block-level)
 # ---------------------------------------------------------------------------
 
 
-@dataclass
-class SearchResult:
-    page: WikiPage
-    score: float
-
-
 def bm25_search(
-    pages: list[WikiPage],
-    query: str,
-    limit: int = 10,
+    blocks: list[Block],
+    query_tokens: list[str],
+    limit: int = 20,
 ) -> list[SearchResult]:
-    """Run BM25 search across *pages* for *query*."""
-    if not pages:
+    """Run BM25 over blocks and return ranked results."""
+    if not blocks or not query_tokens:
         return []
 
-    index = _build_index(pages)
-    query_tokens = tokenize(query)
+    index = _build_block_index(blocks)
 
     results: list[SearchResult] = []
-    for i, page in enumerate(pages):
+    for i, block in enumerate(blocks):
         score = _score_bm25(index, query_tokens, i)
         if score > 0:
-            results.append(SearchResult(page=page, score=score))
+            results.append(SearchResult(block=block, score=score, match_type="semantic"))
 
     results.sort(key=lambda r: r.score, reverse=True)
     return results[:limit]
 
 
 # ---------------------------------------------------------------------------
-# Grep search (ripgrep)
+# Grep search (ripgrep) — block-level hit mapping
 # ---------------------------------------------------------------------------
 
 
 def grep_search(
     wiki_dir: str,
-    query: str,
-    limit: int = 10,
-) -> list[SearchResult]:
-    """Run ripgrep across wiki markdown files and return matches.
-
-    Uses ripgrepy SDK. Returns one result per matching file with
-    score = match count (ranked by relevance).
-    """
+    pattern: str,
+    limit: int = 50,
+) -> dict[str, list[int]]:
+    """Run ripgrep and return {file_path: [line_numbers]}."""
     try:
         from ripgrepy import Ripgrepy
     except ImportError:
-        return []
+        return {}
 
     wiki_path = Path(wiki_dir)
     if not wiki_path.exists():
-        return []
+        return {}
 
-    rg = Ripgrepy(query, str(wiki_path))
+    rg = Ripgrepy(pattern, str(wiki_path))
     rg = rg.type_("md").json()
 
     try:
         raw = rg.run().as_string
     except Exception:
-        return []
+        return {}
 
-    # Parse JSON lines output, group by file
-    matches: dict[str, int] = {}
+    hits: dict[str, list[int]] = {}
     for line in raw.splitlines():
         line = line.strip()
         if not line:
@@ -186,53 +254,98 @@ def grep_search(
         if entry.get("type") != "match":
             continue
         path = entry.get("data", {}).get("path", {}).get("text", "")
-        if path:
-            matches[path] = matches.get(path, 0) + 1
+        line_no = entry.get("data", {}).get("line_number", 0)
+        if path and line_no:
+            hits.setdefault(path, []).append(line_no)
 
-    if not matches:
+    return hits
+
+
+def _line_in_block(block: Block, line_no: int) -> bool:
+    """Check if a line number falls within a block's range."""
+    return block.line_start <= line_no <= block.line_end
+
+
+# ---------------------------------------------------------------------------
+# Tiered ranking
+# ---------------------------------------------------------------------------
+
+
+def tiered_rank(
+    blocks: list[Block],
+    exact_terms: list[str],
+    fuzzy_terms: list[str],
+    wiki_dir: str,
+    limit: int = 10,
+) -> list[SearchResult]:
+    """Dual-path retrieval with tiered ranking.
+
+    Tier 1 (VIP): grep hit block that also contains exact_terms → force top
+    Tier 2: BM25 high score (fuzzy_terms semantic match)
+    """
+    all_terms = exact_terms + fuzzy_terms
+    if not all_terms:
         return []
 
-    # Convert file paths to slugs and build results
-    results: list[SearchResult] = []
-    for file_path, count in sorted(matches.items(), key=lambda x: x[1], reverse=True):
-        p = Path(file_path)
-        # Derive slug: strip wiki_dir prefix and .md extension
-        try:
-            rel = p.relative_to(wiki_path)
-        except ValueError:
+    # --- BM25 path ---
+    bm25_results = bm25_search(blocks, tokenize(" ".join(all_terms)), limit * 3)
+
+    # --- Grep path (exact_terms only) ---
+    grep_hits: dict[str, list[int]] = {}
+    if exact_terms:
+        pattern = "|".join(re.escape(t) for t in exact_terms)
+        grep_hits = grep_search(wiki_dir, pattern, limit * 3)
+
+    # --- Map grep hits to blocks ---
+    grep_block_keys: set[str] = set()  # "file_path:line_start"
+    for file_path, line_nos in grep_hits.items():
+        for block in blocks:
+            if block.file_path == file_path:
+                for ln in line_nos:
+                    if _line_in_block(block, ln):
+                        grep_block_keys.add(f"{block.file_path}:{block.line_start}")
+                        break
+
+    # --- Tier assignment ---
+    exact_term_set = {t.lower() for t in exact_terms}
+
+    tier1: list[SearchResult] = []
+    tier2: list[SearchResult] = []
+    seen_keys: set[str] = set()
+
+    for r in bm25_results:
+        key = f"{r.block.file_path}:{r.block.line_start}"
+        if key in seen_keys:
             continue
-        slug = str(rel.with_suffix("")).replace("/", ".")
+        seen_keys.add(key)
 
-        results.append(SearchResult(
-            page=WikiPage(path=p, relative_path=str(rel), slug=slug, title=slug),
-            score=float(count),
-        ))
+        block_text_lower = r.block.content.lower()
+        has_exact = any(t in block_text_lower for t in exact_term_set)
+        grep_hit = key in grep_block_keys
 
-    return results[:limit]
+        if grep_hit and has_exact:
+            tier1.append(SearchResult(block=r.block, score=r.score + 100.0, match_type="exact"))
+        else:
+            tier2.append(r)
 
+    # Also add grep-only hits not in BM25 results
+    for file_path, line_nos in grep_hits.items():
+        for block in blocks:
+            if block.file_path != file_path:
+                continue
+            for ln in line_nos:
+                if _line_in_block(block, ln):
+                    key = f"{block.file_path}:{block.line_start}"
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        block_text_lower = block.content.lower()
+                        has_exact = any(t in block_text_lower for t in exact_term_set)
+                        if has_exact:
+                            tier1.append(SearchResult(block=block, score=100.0, match_type="exact"))
+                    break
 
-# ---------------------------------------------------------------------------
-# Reciprocal Rank Fusion
-# ---------------------------------------------------------------------------
+    # Sort each tier
+    tier1.sort(key=lambda r: r.score, reverse=True)
+    tier2.sort(key=lambda r: r.score, reverse=True)
 
-
-def rrf_merge(
-    bm25_results: list[dict[str, float]],
-    vector_results: list[dict[str, float]],
-    limit: int,
-    k: int = 60,
-) -> list[dict[str, float]]:
-    """Merge two ranked result lists using Reciprocal Rank Fusion (k=60)."""
-    scores: dict[str, float] = {}
-
-    for rank, r in enumerate(bm25_results):
-        slug = r["slug"]
-        scores[slug] = scores.get(slug, 0.0) + 1.0 / (k + rank + 1)
-
-    for rank, r in enumerate(vector_results):
-        slug = r["slug"]
-        scores[slug] = scores.get(slug, 0.0) + 1.0 / (k + rank + 1)
-
-    merged = [{"slug": s, "score": sc} for s, sc in scores.items()]
-    merged.sort(key=lambda r: r["score"], reverse=True)
-    return merged[:limit]
+    return (tier1 + tier2)[:limit]
