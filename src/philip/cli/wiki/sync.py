@@ -39,10 +39,7 @@ DETAILS: dict[str, OperationDetail] = {
     "wiki.sync": OperationDetail(
         operation_id="wiki.sync",
         display_name="Wiki Sync",
-        description=(
-            "Track file changes (added/modified/deleted)"
-            " and update sync state. Optionally syncs to DB9."
-        ),
+        description="Track file changes (added/modified/deleted) and update sync state.",
         parameters=OPERATIONS[0].parameters,
         return_type="object",
         invocation_examples=[
@@ -89,36 +86,5 @@ def execute(args: dict[str, Any]) -> ExecutionResult:
     new_state = update_sync_state([paths.wiki, paths.contexts], root, state)
     save_sync_state(paths.sync_state, new_state)
     output["last_sync"] = new_state.last_sync
-
-    # Sync to DB9 if configured
-    if config.db9 and config.db9.url:
-        from philip.capabilities.wiki.db9 import create_db9_client
-        from philip.capabilities.wiki.sync import content_hash as compute_hash
-        from philip.capabilities.wiki.wiki import parse_wiki_page
-
-        db9 = create_db9_client(config)
-        if db9:
-            try:
-                db9.ensure_schema()
-
-                wiki_changes = [
-                    f for f in (result.added + result.modified) if f.startswith("wiki/")
-                ]
-                for rel in wiki_changes:
-                    file_path = root / rel
-                    page = parse_wiki_page(file_path, paths.wiki)
-                    h = compute_hash(file_path)
-                    db9.upsert_page(page, h)
-
-                wiki_deleted = [f for f in result.deleted if f.startswith("wiki/")]
-                for rel in wiki_deleted:
-                    slug = rel.removeprefix("wiki/").removesuffix(".md")
-                    db9.delete_page(slug)
-
-                output["db9_synced"] = len(wiki_changes) + len(wiki_deleted)
-            except Exception as err:
-                output["db9_error"] = str(err)
-            finally:
-                db9.close()
 
     return ExecutionResult(data=output)

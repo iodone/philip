@@ -8,9 +8,8 @@ from philip.capabilities.wiki.config import (
     load_config,
     vault_paths,
 )
-from philip.capabilities.wiki.db9 import DB9Client, DB9SearchResult, create_db9_client
 from philip.capabilities.wiki.graph import GraphAnalysis, analyze_graph
-from philip.capabilities.wiki.search import bm25_search, rrf_merge, tokenize
+from philip.capabilities.wiki.search import bm25_search, parse_blocks, tokenize, tiered_rank
 from philip.capabilities.wiki.skills import install_skills_to, list_skills
 from philip.capabilities.wiki.sync import (
     SyncResult,
@@ -33,10 +32,6 @@ __all__ = [
     "find_vault_root",
     "load_config",
     "vault_paths",
-    # db9
-    "DB9Client",
-    "DB9SearchResult",
-    "create_db9_client",
     # wiki
     "WikiPage",
     "extract_wikilinks",
@@ -45,7 +40,8 @@ __all__ = [
     # search
     "tokenize",
     "bm25_search",
-    "rrf_merge",
+    "parse_blocks",
+    "tiered_rank",
     # graph
     "GraphAnalysis",
     "analyze_graph",

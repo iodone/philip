@@ -244,18 +244,15 @@ class TestSearch:
         from philip.capabilities.wiki.search import tokenize
 
         tokens = tokenize("分布式系统")
-        # Unigrams: 分, 布, 式, 系, 统
-        # Bigrams: 分布, 布式, 式系, 系统
-        assert "分" in tokens
-        assert "分布" in tokens
-        assert "系统" in tokens
+        # jieba 识别为一个词
+        assert "分布式系统" in tokens
 
     def test_tokenize_mixed(self) -> None:
         from philip.capabilities.wiki.search import tokenize
 
         tokens = tokenize("Kafka 分布式 streaming")
         assert "kafka" in tokens
-        assert "分" in tokens
+        assert "分布式" in tokens
         assert "streaming" in tokens
 
     def test_tokenize_empty(self) -> None:
@@ -264,82 +261,173 @@ class TestSearch:
         assert tokenize("") == []
 
     def test_bm25_search_basic(self, vault: Path) -> None:
-        from philip.capabilities.wiki.search import bm25_search
+        from philip.capabilities.wiki.search import (
+            bm25_search,
+            parse_blocks,
+            tokenize,
+        )
         from philip.capabilities.wiki.wiki import load_wiki_pages
 
         pages = load_wiki_pages(vault / "wiki" / "pages")
-        results = bm25_search(pages, "consensus algorithm")
+        wiki_dir = str(vault / "wiki" / "pages")
+        blocks = []
+        for p in pages:
+            blocks.extend(parse_blocks(str(p.path), p.content, wiki_dir))
+        results = bm25_search(blocks, tokenize("consensus algorithm"))
         assert len(results) > 0
-        # raft-consensus should be top result
-        assert results[0].page.slug == "raft-consensus"
+        assert results[0].block.slug == "raft-consensus"
 
     def test_bm25_search_cjk(self, tmp_path: Path) -> None:
-        """Test BM25 with CJK content."""
-        from philip.capabilities.wiki.search import bm25_search
-        from philip.capabilities.wiki.wiki import WikiPage
+        """Test BM25 with CJK content on blocks."""
+        from philip.capabilities.wiki.search import (
+            Block,
+            bm25_search,
+            tokenize,
+        )
 
-        pages = [
-            WikiPage(
-                path=Path("a.md"),
-                relative_path="a.md",
+        blocks = [
+            Block(
+                file_path="a.md",
                 slug="distributed-systems",
-                title="分布式系统",
-                content="分布式系统是一类多台计算机协同工作的系统。",
-                mtime=0,
+                header="# 分布式系统",
+                content="# 分布式系统\n分布式系统是一类多台计算机协同工作的系统。",
+                line_start=1,
+                line_end=2,
             ),
-            WikiPage(
-                path=Path("b.md"),
-                relative_path="b.md",
+            Block(
+                file_path="b.md",
                 slug="web-development",
-                title="Web Development",
-                content="Building web applications with HTML, CSS, and JavaScript.",
-                mtime=0,
+                header="# Web Development",
+                content="# Web Development\nBuilding web applications with HTML, CSS, and JavaScript.",
+                line_start=1,
+                line_end=2,
             ),
         ]
-        results = bm25_search(pages, "分布式")
+        results = bm25_search(blocks, tokenize("分布式系统"))
         assert len(results) > 0
-        assert results[0].page.slug == "distributed-systems"
+        assert results[0].block.slug == "distributed-systems"
 
     def test_bm25_search_no_results(self, vault: Path) -> None:
-        from philip.capabilities.wiki.search import bm25_search
+        from philip.capabilities.wiki.search import (
+            bm25_search,
+            parse_blocks,
+            tokenize,
+        )
         from philip.capabilities.wiki.wiki import load_wiki_pages
 
         pages = load_wiki_pages(vault / "wiki" / "pages")
-        results = bm25_search(pages, "quantum computing superposition")
+        wiki_dir = str(vault / "wiki" / "pages")
+        blocks = []
+        for p in pages:
+            blocks.extend(parse_blocks(str(p.path), p.content, wiki_dir))
+        results = bm25_search(blocks, tokenize("quantum computing superposition"))
         assert len(results) == 0
 
     def test_bm25_search_limit(self, vault: Path) -> None:
-        from philip.capabilities.wiki.search import bm25_search
+        from philip.capabilities.wiki.search import (
+            bm25_search,
+            parse_blocks,
+            tokenize,
+        )
         from philip.capabilities.wiki.wiki import load_wiki_pages
 
         pages = load_wiki_pages(vault / "wiki" / "pages")
-        results = bm25_search(pages, "consensus", limit=1)
+        wiki_dir = str(vault / "wiki" / "pages")
+        blocks = []
+        for p in pages:
+            blocks.extend(parse_blocks(str(p.path), p.content, wiki_dir))
+        results = bm25_search(blocks, tokenize("consensus"), limit=1)
         assert len(results) <= 1
 
-    def test_bm25_search_empty_pages(self) -> None:
-        from philip.capabilities.wiki.search import bm25_search
+    def test_bm25_search_empty_blocks(self) -> None:
+        from philip.capabilities.wiki.search import bm25_search, tokenize
 
-        assert bm25_search([], "test") == []
+        assert bm25_search([], tokenize("test")) == []
 
-    def test_rrf_merge(self) -> None:
-        from philip.capabilities.wiki.search import rrf_merge
+    def test_parse_blocks(self) -> None:
+        from philip.capabilities.wiki.search import parse_blocks
 
-        bm25 = [{"slug": "a", "score": 10.0}, {"slug": "b", "score": 5.0}]
-        vector = [{"slug": "b", "score": 0.9}, {"slug": "c", "score": 0.8}]
-        merged = rrf_merge(bm25, vector, limit=3)
+        content = "# Title\n\nIntro text\n\n## Section A\n\nContent A\n\n### Sub\n\nSub content\n\n## Section B\n\nContent B"
+        blocks = parse_blocks("/wiki/test.md", content, "/wiki")
+        assert len(blocks) == 4
+        assert blocks[0].header == "# Title"
+        assert blocks[1].header == "## Section A"
+        assert blocks[2].header == "### Sub"
+        assert blocks[3].header == "## Section B"
+        assert blocks[0].slug == "test"
 
-        slugs = [r["slug"] for r in merged]
-        # 'b' appears in both lists so should rank highest
-        assert slugs[0] == "b"
-        assert len(merged) == 3
+    def test_tiered_rank(self, tmp_path: Path) -> None:
+        from philip.capabilities.wiki.search import Block, tiered_rank
 
-    def test_rrf_merge_limit(self) -> None:
-        from philip.capabilities.wiki.search import rrf_merge
+        # Create actual files so grep can find them
+        wiki_dir = str(tmp_path)
+        (tmp_path / "a.md").write_text("# Falcon 慢查询\nFalcon 慢查询报警排查\n", encoding="utf-8")
+        (tmp_path / "b.md").write_text("# Web Dev\nHTML CSS JavaScript\n", encoding="utf-8")
+        (tmp_path / "c.md").write_text("# 分布式\n分布式系统设计\n", encoding="utf-8")
 
-        bm25 = [{"slug": "a", "score": 1.0}, {"slug": "b", "score": 0.9}]
-        vector = [{"slug": "c", "score": 0.8}]
-        merged = rrf_merge(bm25, vector, limit=2)
+        blocks = [
+            Block(f"{wiki_dir}/a.md", "a", "# Falcon 慢查询", "# Falcon 慢查询\nFalcon 慢查询报警排查", 1, 3),
+            Block(f"{wiki_dir}/b.md", "b", "# Web Dev", "# Web Dev\nHTML CSS JavaScript", 1, 2),
+            Block(f"{wiki_dir}/c.md", "c", "# 分布式", "# 分布式\n分布式系统设计", 1, 2),
+        ]
+        results = tiered_rank(blocks, ["Falcon"], ["慢查询"], wiki_dir, limit=5)
+        assert len(results) > 0
+        assert results[0].block.slug == "a"
+        assert results[0].match_type == "exact"
+
+    def test_grep_search_missing_dir(self) -> None:
+        from philip.capabilities.wiki.search import grep_search
+
+        result = grep_search("/nonexistent/path", "test")
+        assert result == {}
+
+    def test_grep_search_empty_pattern(self, tmp_path: Path) -> None:
+        from philip.capabilities.wiki.search import grep_search
+
+        (tmp_path / "test.md").write_text("# Hello\nWorld\n", encoding="utf-8")
+        result = grep_search(str(tmp_path), "")
+        # Empty pattern may return empty or match everything — either is fine
+        assert isinstance(result, dict)
+
+    def test_build_grep_pattern_single(self) -> None:
+        from philip.capabilities.wiki.search import _build_grep_pattern
+
+        assert _build_grep_pattern(["Falcon"]) == "Falcon"
+
+    def test_build_grep_pattern_and_semantics(self) -> None:
+        from philip.capabilities.wiki.search import _build_grep_pattern
+
+        pattern = _build_grep_pattern(["Falcon", "慢查询"])
+        # Should use lookahead for AND semantics
+        assert "(?=.*Falcon)" in pattern
+        assert "(?=.*慢查询)" in pattern
+
+    def test_merge_adjacent_blocks(self) -> None:
+        from philip.capabilities.wiki.search import (
+            Block,
+            SearchResult,
+            _merge_adjacent_blocks,
+        )
+
+        results = [
+            SearchResult(
+                Block("/wiki/a.md", "a", "# A", "content", 1, 5),
+                score=3.0, match_type="semantic",
+            ),
+            SearchResult(
+                Block("/wiki/a.md", "a", "# A", "content", 6, 10),
+                score=2.0, match_type="semantic",
+            ),
+            SearchResult(
+                Block("/wiki/b.md", "b", "# B", "other", 1, 3),
+                score=1.0, match_type="semantic",
+            ),
+        ]
+        merged = _merge_adjacent_blocks(results)
+        # Adjacent blocks from same file should merge (keep higher score)
         assert len(merged) == 2
+        assert merged[0].score == 3.0
+        assert merged[1].block.slug == "b"
 
 
 # ---------------------------------------------------------------------------

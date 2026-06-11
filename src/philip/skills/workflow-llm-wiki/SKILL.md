@@ -1,6 +1,6 @@
 ---
 name: workflow-llm-wiki
-version: 2.0.0
+version: 3.0.0
 description: |
   LLM Wiki vault 操作手册。
 
@@ -31,15 +31,16 @@ description: |
 
 ## CLI
 
-Wiki vault 的底层操作通过 `philip` CLI 触发：
+Wiki vault 的底层操作通过 `philip` CLI 触发（dot notation）：
 
 | 命令 | 说明 |
 |---|---|
-| `philip wiki init [dir]` | 初始化 wiki workspace |
-| `philip wiki search <query>` | BM25 + vector 搜索 |
-| `philip wiki sync` | 更新搜索索引和同步状态 |
-| `philip wiki status` | vault 统计和健康摘要 |
-| `philip wiki graph` | wiki 拓扑分析（社区、枢纽、孤岛、缺页） |
+| `philip wiki.init directory=<dir>` | 初始化 wiki workspace |
+| `philip wiki.search query=<text>` | BM25 + ripgrep 搜索（纯文本模式） |
+| `philip wiki.search exact_terms='[...]' fuzzy_terms='[...]'` | 结构化搜索（Agent 扩展后的词根） |
+| `philip wiki.sync` | 变更检测 + 同步状态更新 |
+| `philip wiki.status` | vault 统计和健康摘要 |
+| `philip wiki.graph` | wiki 拓扑分析（社区、枢纽、孤岛、缺页） |
 
 ---
 
@@ -173,25 +174,64 @@ Search the wiki and synthesize answers.
 
 **STOP。** If out of scope → report "Question outside wiki scope" → DONE.
 
-### Phase 1: Search & Synthesize
+### Phase 1: Query Expansion
 
-2. Use hybrid search:
-   - Run `philip wiki search "<question>"` for semantic/BM25 search
-   - Scan `wiki/` for exact keyword matching
-   - Combine results
+2. Analyze the user's question. Decompose into structured search terms:
 
-3. Read matched markdown files from `wiki/`.
+   - **exact_terms**: 实体名、错误码、UUID、函数名、专有名词 — 精确匹配不可丢失的词
+   - **fuzzy_terms**: 同义词、口语化描述、概念性表达 — 语义泛化的词
 
-4. Follow `[[wikilinks]]` and `## Related` sections for graph walk.
+   示例：
+   - 用户问："Falcon 那个慢查询报警是怎么处理的？"
+   - → `exact_terms: ["Falcon"]`
+   - → `fuzzy_terms: ["慢查询", "报警", "slow query", "alert", "排查"]`
 
-5. Synthesize an answer that:
-   - Directly addresses the user's question
-   - Cites wiki pages using `[[wikilinks]]`
-   - Notes contradictions or knowledge gaps
+   **不要分词，不要拆词。** LLM 是翻译官 + 同义词外挂，输出的是完整词根。
 
-### Phase 2: Compound (Conditional)
+3. 调用搜索：
+   ```
+   philip wiki.search exact_terms='["Falcon"]' fuzzy_terms='["慢查询","报警","slow query","alert","排查"]'
+   ```
 
-6. **When to compound** (write back to wiki):
+   如果问题简单（单一概念），也可以直接用 query：
+   ```
+   philip wiki.search query=agent memory
+   ```
+
+### Phase 2: Filter & Read
+
+4. 对每个 snippet 评估和用户问题的相关度：
+
+   | 判断 | 操作 |
+   |------|------|
+   | content 跟问题无关 | 直接丢弃，不读原文 |
+   | content 相关，信息够用 | 直接用 snippet |
+   | content 相关，信息不够 | 读原文补充上下文 |
+
+5. 需要读原文的场景：
+   - snippet 被截断，需要更多上下文
+   - 需要看 frontmatter（tags、contexts、updated）
+   - 需要跟踪 `[[wikilinks]]` 到其他页面
+
+   **不要无脑读所有匹配文件。** 只读 snippet 相关但信息不足的文件。
+
+6. 跟踪 `[[wikilinks]]` 和 `## Related` sections，补充关联知识。
+
+### Phase 3: Synthesize & Calibrate
+
+7. 合成答案：
+   - 直接回答用户问题
+   - 引用来源（`source: wiki/pages/xxx.md, section: ### xxx`）
+   - 标注矛盾或知识缺口
+
+8. 校准：对比原始问题和搜索结果
+   - 搜索结果是否覆盖了问题的所有方面？
+   - 是否有遗漏的关键信息？
+   - 如果有缺口 → 明确标注
+
+### Phase 4: Compound (Conditional)
+
+9. **When to compound** (写回 wiki)：
    - Answer connects 3+ wiki pages not previously documented
    - Answer resolves a contradiction
    - Answer fills a knowledge gap with high-confidence synthesis
@@ -206,15 +246,17 @@ Search the wiki and synthesize answers.
    BAD:  每次 query 都写回（会产生大量低价值页面）
    BAD:  不写回（知识无法复利）
 
-7. If compounding → create synthesis page → update cross-references → append to log → sync.
+10. If compounding → create synthesis page → update cross-references → append to log → sync.
 
-### Phase 3: Report
+### Phase 5: Report
 
-8. Report to user:
+11. Report to user:
     ```
     DONE
     Answer: [synthesized answer]
-    Sources: [list of wiki pages cited]
+    Sources:
+    - wiki/pages/xxx.md § ### Section Name (exact)
+    - wiki/pages/yyy.md § ## Section Name (semantic)
     Compounded: Yes/No (if Yes, list new pages)
     Gaps: [knowledge gaps found]
     ```
@@ -401,7 +443,7 @@ RECOMMENDATION: [下一步建议]
 
 ---
 
-**Skill Version**: 2.0.0
+**Skill Version**: 3.0.0
 **Author**: Meta42
 **Status**: Active & Enforced
-**Last Updated**: 2026-04-28
+**Last Updated**: 2026-06-11

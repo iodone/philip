@@ -181,52 +181,9 @@ def test_wiki_sync_dry_run(tmp_path: Path):
 # ---------------------------------------------------------------------------
 
 
-def test_wiki_search_hybrid_with_db9(tmp_path: Path):
+def test_wiki_search_hybrid(tmp_path: Path):
     target = str(tmp_path / "my-wiki")
     _invoke("wiki.init", f"directory={target}")
-
-    config_path = tmp_path / "my-wiki" / ".llm-wiki" / "config.toml"
-    config_path.write_text(
-        '[vault]\nname = "Test"\nlanguage = "en"\n\n[db9]\nurl = "postgresql://localhost/test"\n',
-        encoding="utf-8",
-    )
-
-    pages_dir = tmp_path / "my-wiki" / "wiki" / "pages"
-    (pages_dir / "test-page.md").write_text(
-        "---\ntitle: Test Page\n---\n\nMachine learning content.\n",
-        encoding="utf-8",
-    )
-
-    mock_conn = MagicMock()
-    mock_cursor = MagicMock()
-    mock_conn.cursor.return_value = mock_cursor
-    mock_cursor.fetchall.return_value = [("test-page", "Test Page", 0.9)]
-
-    with patch("philip.capabilities.wiki.db9._load_psycopg2") as mock_load:
-        mock_pg = MagicMock()
-        mock_pg.connect.return_value = mock_conn
-        mock_load.return_value = mock_pg
-
-        old_cwd = os.getcwd()
-        try:
-            os.chdir(target)
-            result = _invoke("wiki.search", "query=machine learning")
-        finally:
-            os.chdir(old_cwd)
-
-    assert result.exit_code == 0
-    assert "test-page" in result.output
-
-
-def test_wiki_search_bm25_only_flag(tmp_path: Path):
-    target = str(tmp_path / "my-wiki")
-    _invoke("wiki.init", f"directory={target}")
-
-    config_path = tmp_path / "my-wiki" / ".llm-wiki" / "config.toml"
-    config_path.write_text(
-        '[vault]\nname = "Test"\nlanguage = "en"\n\n[db9]\nurl = "postgresql://localhost/test"\n',
-        encoding="utf-8",
-    )
 
     pages_dir = tmp_path / "my-wiki" / "wiki" / "pages"
     (pages_dir / "test-page.md").write_text(
@@ -237,57 +194,36 @@ def test_wiki_search_bm25_only_flag(tmp_path: Path):
     old_cwd = os.getcwd()
     try:
         os.chdir(target)
-        result = _invoke("wiki.search", "query=machine learning", "bm25_only=true")
+        result = _invoke("wiki.search", "query=machine learning")
     finally:
         os.chdir(old_cwd)
 
     assert result.exit_code == 0
-    assert "bm25" in result.output.lower()
+    assert "test-page" in result.output
 
 
-def test_wiki_sync_with_db9(tmp_path: Path):
+def test_wiki_sync_basic(tmp_path: Path):
     target = str(tmp_path / "my-wiki")
     _invoke("wiki.init", f"directory={target}")
-
-    config_path = tmp_path / "my-wiki" / ".llm-wiki" / "config.toml"
-    config_path.write_text(
-        '[vault]\nname = "Test"\nlanguage = "en"\n\n[db9]\nurl = "postgresql://localhost/test"\n',
-        encoding="utf-8",
-    )
 
     pages_dir = tmp_path / "my-wiki" / "wiki" / "pages"
     (pages_dir / "test-page.md").write_text(
         "---\ntitle: Test Page\n---\n\nContent.\n", encoding="utf-8"
     )
 
-    mock_conn = MagicMock()
-    mock_cursor = MagicMock()
-    mock_conn.cursor.return_value = mock_cursor
-
-    with patch("philip.capabilities.wiki.db9._load_psycopg2") as mock_load:
-        mock_pg = MagicMock()
-        mock_pg.connect.return_value = mock_conn
-        mock_load.return_value = mock_pg
-
-        old_cwd = os.getcwd()
-        try:
-            os.chdir(target)
-            result = _invoke("wiki.sync")
-        finally:
-            os.chdir(old_cwd)
+    old_cwd = os.getcwd()
+    try:
+        os.chdir(target)
+        result = _invoke("wiki.sync")
+    finally:
+        os.chdir(old_cwd)
 
     assert result.exit_code == 0
 
 
-def test_wiki_sync_db9_dry_run_no_upsert(tmp_path: Path):
+def test_wiki_sync_dry_run(tmp_path: Path):
     target = str(tmp_path / "my-wiki")
     _invoke("wiki.init", f"directory={target}")
-
-    config_path = tmp_path / "my-wiki" / ".llm-wiki" / "config.toml"
-    config_path.write_text(
-        '[vault]\nname = "Test"\nlanguage = "en"\n\n[db9]\nurl = "postgresql://localhost/test"\n',
-        encoding="utf-8",
-    )
 
     pages_dir = tmp_path / "my-wiki" / "wiki" / "pages"
     (pages_dir / "test-page.md").write_text(
@@ -302,4 +238,3 @@ def test_wiki_sync_db9_dry_run_no_upsert(tmp_path: Path):
         os.chdir(old_cwd)
 
     assert result.exit_code == 0
-    assert "db9_synced" not in result.output
