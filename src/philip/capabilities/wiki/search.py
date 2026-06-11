@@ -42,9 +42,25 @@ class SearchResult:
 # ---------------------------------------------------------------------------
 
 
+_jieba_initialized = False
+
+
 def tokenize(text: str) -> list[str]:
     """Tokenize text using jieba. Filters out whitespace-only tokens."""
+    import contextlib
+    import io
+    import warnings
+
     import jieba
+
+    global _jieba_initialized
+    if not _jieba_initialized:
+        # Suppress jieba's init output and Python 3.14 SyntaxWarnings
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=SyntaxWarning)
+            with contextlib.redirect_stdout(io.StringIO()):
+                jieba.initialize()
+        _jieba_initialized = True
 
     return [t for t in jieba.lcut(text.lower()) if t.strip()]
 
