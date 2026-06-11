@@ -244,18 +244,15 @@ class TestSearch:
         from philip.capabilities.wiki.search import tokenize
 
         tokens = tokenize("分布式系统")
-        # Unigrams: 分, 布, 式, 系, 统
-        # Bigrams: 分布, 布式, 式系, 系统
-        assert "分" in tokens
-        assert "分布" in tokens
-        assert "系统" in tokens
+        # jieba 识别为一个词
+        assert "分布式系统" in tokens
 
     def test_tokenize_mixed(self) -> None:
         from philip.capabilities.wiki.search import tokenize
 
         tokens = tokenize("Kafka 分布式 streaming")
         assert "kafka" in tokens
-        assert "分" in tokens
+        assert "分布式" in tokens
         assert "streaming" in tokens
 
     def test_tokenize_empty(self) -> None:
@@ -306,7 +303,7 @@ class TestSearch:
                 line_end=2,
             ),
         ]
-        results = bm25_search(blocks, tokenize("分布式"))
+        results = bm25_search(blocks, tokenize("分布式系统"))
         assert len(results) > 0
         assert results[0].block.slug == "distributed-systems"
 

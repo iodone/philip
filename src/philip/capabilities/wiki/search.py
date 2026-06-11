@@ -38,36 +38,15 @@ class SearchResult:
 
 
 # ---------------------------------------------------------------------------
-# CJK tokenizer
+# Tokenizer (jieba)
 # ---------------------------------------------------------------------------
-
-_CJK_RE = re.compile(r"[一-鿿㐀-䶿豈-﫿" r"　-〿぀-ゟ゠-ヿ가-힯]")
 
 
 def tokenize(text: str) -> list[str]:
-    """Tokenize text into words (whitespace split) and CJK unigrams + bigrams."""
-    tokens: list[str] = []
-    normalized = text.lower()
-    i = 0
-    non_cjk_buf = ""
+    """Tokenize text using jieba. Filters out whitespace-only tokens."""
+    import jieba
 
-    while i < len(normalized):
-        ch = normalized[i]
-        if _CJK_RE.match(ch):
-            if non_cjk_buf:
-                tokens.extend(t for t in non_cjk_buf.split() if t)
-                non_cjk_buf = ""
-            tokens.append(ch)
-            if i + 1 < len(normalized) and _CJK_RE.match(normalized[i + 1]):
-                tokens.append(ch + normalized[i + 1])
-            i += 1
-        else:
-            non_cjk_buf += ch
-            i += 1
-
-    if non_cjk_buf:
-        tokens.extend(t for t in non_cjk_buf.split() if t)
-    return tokens
+    return [t for t in jieba.lcut(text.lower()) if t.strip()]
 
 
 # ---------------------------------------------------------------------------

@@ -10,6 +10,7 @@ dependencies = [
     "bub-im-bridge @ git+https://github.com/iodone/bub-im-bridge.git@v0.7.0",
     "bub-web-search @ git+https://github.com/bubbuild/bub-contrib.git@main#subdirectory=packages/bub-web-search",
     "bub-schedule @ git+https://github.com/bubbuild/bub-contrib.git@main#subdirectory=packages/bub-schedule",
+    "jieba>=0.42",
     "python-frontmatter>=1.0",
     "ripgrepy>=2.2",
     "rub @ git+https://github.com/iodone/rubick.git@main",
