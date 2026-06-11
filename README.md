@@ -1,6 +1,6 @@
 # Philip
 
-Philip 是 [Bub](https://github.com/bubbuild/bub) 生态的主入口，统一了 gateway 启动、workspace 管理和 CLI 工具。
+Philip 是 [Bub](https://github.com/bubbuild/bub) 生态的 Distribution ，统一了 gateway 启动、workspace 管理和 CLI 工具。
 
 ## 安装
 
@@ -33,7 +33,7 @@ philip wiki.init directory=/path/to/workspace
 ### 2. 配置并启动 Gateway
 
 ```bash
-cp /path/to/workspace/.env.example /path/to/workspace/.env
+cp /path/to/philip/.env.example /path/to/workspace/.env
 # 编辑 .env，填入 BUB_MODEL、BUB_API_KEY、BUB_WORKSPACE
 
 # 启动所有 channel
