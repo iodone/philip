@@ -8,8 +8,12 @@ from __future__ import annotations
 import json
 import math
 import re
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
+
+# Suppress jieba's SyntaxWarnings from invalid regex escapes (Python 3.14)
+warnings.filterwarnings("ignore", category=SyntaxWarning, module="jieba")
 
 # ---------------------------------------------------------------------------
 # Data models
@@ -266,6 +270,45 @@ def _line_in_block(block: Block, line_no: int) -> bool:
 # ---------------------------------------------------------------------------
 
 
+_VIP_SCORE_BONUS = 100.0  # Added to BM25 score for Tier 1 (VIP) results
+
+
+def _build_grep_pattern(exact_terms: list[str]) -> str:
+    """Build a ripgrep pattern with AND semantics.
+
+    Each term must appear somewhere in the line. Uses lookahead assertions:
+    ``(?=.*term1)(?=.*term2)``
+    """
+    if len(exact_terms) == 1:
+        return re.escape(exact_terms[0])
+    parts = [f"(?=.*{re.escape(t)})" for t in exact_terms]
+    return "".join(parts)
+
+
+def _merge_adjacent_blocks(results: list[SearchResult]) -> list[SearchResult]:
+    """Merge adjacent blocks from the same file to reduce context entropy.
+
+    If two consecutive results are from the same file and their line ranges
+    are adjacent (or overlapping), keep the one with the higher score.
+    """
+    if len(results) <= 1:
+        return results
+
+    merged: list[SearchResult] = [results[0]]
+    for r in results[1:]:
+        prev = merged[-1]
+        if (
+            r.block.file_path == prev.block.file_path
+            and r.block.line_start <= prev.block.line_end + 1
+        ):
+            # Adjacent — keep the higher-scored one
+            if r.score > prev.score:
+                merged[-1] = r
+        else:
+            merged.append(r)
+    return merged
+
+
 def tiered_rank(
     blocks: list[Block],
     exact_terms: list[str],
@@ -285,10 +328,10 @@ def tiered_rank(
     # --- BM25 path ---
     bm25_results = bm25_search(blocks, tokenize(" ".join(all_terms)), limit * 3)
 
-    # --- Grep path (exact_terms only) ---
+    # --- Grep path (exact_terms only, AND semantics) ---
     grep_hits: dict[str, list[int]] = {}
     if exact_terms:
-        pattern = "|".join(re.escape(t) for t in exact_terms)
+        pattern = _build_grep_pattern(exact_terms)
         grep_hits = grep_search(wiki_dir, pattern, limit * 3)
 
     # --- Map grep hits to blocks ---
@@ -319,7 +362,7 @@ def tiered_rank(
         grep_hit = key in grep_block_keys
 
         if grep_hit and has_exact:
-            tier1.append(SearchResult(block=r.block, score=r.score + 100.0, match_type="exact"))
+            tier1.append(SearchResult(block=r.block, score=r.score + _VIP_SCORE_BONUS, match_type="exact"))
         else:
             tier2.append(r)
 
@@ -336,11 +379,15 @@ def tiered_rank(
                         block_text_lower = block.content.lower()
                         has_exact = any(t in block_text_lower for t in exact_term_set)
                         if has_exact:
-                            tier1.append(SearchResult(block=block, score=100.0, match_type="exact"))
+                            tier1.append(SearchResult(block=block, score=_VIP_SCORE_BONUS, match_type="exact"))
                     break
 
     # Sort each tier
     tier1.sort(key=lambda r: r.score, reverse=True)
     tier2.sort(key=lambda r: r.score, reverse=True)
+
+    # Merge adjacent blocks to reduce context entropy
+    tier1 = _merge_adjacent_blocks(tier1)
+    tier2 = _merge_adjacent_blocks(tier2)
 
     return (tier1 + tier2)[:limit]

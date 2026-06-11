@@ -375,6 +375,60 @@ class TestSearch:
         assert results[0].block.slug == "a"
         assert results[0].match_type == "exact"
 
+    def test_grep_search_missing_dir(self) -> None:
+        from philip.capabilities.wiki.search import grep_search
+
+        result = grep_search("/nonexistent/path", "test")
+        assert result == {}
+
+    def test_grep_search_empty_pattern(self, tmp_path: Path) -> None:
+        from philip.capabilities.wiki.search import grep_search
+
+        (tmp_path / "test.md").write_text("# Hello\nWorld\n", encoding="utf-8")
+        result = grep_search(str(tmp_path), "")
+        # Empty pattern may return empty or match everything — either is fine
+        assert isinstance(result, dict)
+
+    def test_build_grep_pattern_single(self) -> None:
+        from philip.capabilities.wiki.search import _build_grep_pattern
+
+        assert _build_grep_pattern(["Falcon"]) == "Falcon"
+
+    def test_build_grep_pattern_and_semantics(self) -> None:
+        from philip.capabilities.wiki.search import _build_grep_pattern
+
+        pattern = _build_grep_pattern(["Falcon", "慢查询"])
+        # Should use lookahead for AND semantics
+        assert "(?=.*Falcon)" in pattern
+        assert "(?=.*慢查询)" in pattern
+
+    def test_merge_adjacent_blocks(self) -> None:
+        from philip.capabilities.wiki.search import (
+            Block,
+            SearchResult,
+            _merge_adjacent_blocks,
+        )
+
+        results = [
+            SearchResult(
+                Block("/wiki/a.md", "a", "# A", "content", 1, 5),
+                score=3.0, match_type="semantic",
+            ),
+            SearchResult(
+                Block("/wiki/a.md", "a", "# A", "content", 6, 10),
+                score=2.0, match_type="semantic",
+            ),
+            SearchResult(
+                Block("/wiki/b.md", "b", "# B", "other", 1, 3),
+                score=1.0, match_type="semantic",
+            ),
+        ]
+        merged = _merge_adjacent_blocks(results)
+        # Adjacent blocks from same file should merge (keep higher score)
+        assert len(merged) == 2
+        assert merged[0].score == 3.0
+        assert merged[1].block.slug == "b"
+
 
 # ---------------------------------------------------------------------------
 # Graph tests
