@@ -287,8 +287,8 @@ dependencies = [
 
 [[package]]
 name = "bub-im-bridge"
-version = "0.7.2"
-source = { git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.7.2#a50c11ad0e1ce402ec6f713348eb47285e99f25b" }
+version = "0.7.3"
+source = { git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.7.3#1e377edcb05d25876f9ab70d7ec4d965599d03ae" }
 dependencies = [
     { name = "bub" },
     { name = "lark-oapi" },
@@ -1245,7 +1245,7 @@ dev = [
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.9" },
     { name = "bub", git = "https://github.com/bubbuild/bub.git?rev=main" },
-    { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.7.2" },
+    { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.7.3" },
     { name = "bub-schedule", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&rev=main" },
     { name = "bub-web-search", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&rev=main" },
     { name = "jieba", specifier = ">=0.42" },
