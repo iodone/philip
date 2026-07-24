@@ -8,7 +8,7 @@ from typing import Any
 from bub.channels.base import Channel
 from bub.envelope import content_of, field_of
 from bub.framework import BubFramework
-from bub.hookspecs import hookimpl
+from bub.hooks import hookimpl
 from bub.types import State
 
 
