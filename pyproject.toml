@@ -13,6 +13,7 @@ dependencies = [
     "jieba>=0.42",
     "python-frontmatter>=1.0",
     "ripgrepy>=2.2",
+    "republic>=0.5.7",
     "rub @ git+https://github.com/iodone/rubick.git@main",
     "toml>=0.10",
 ]
