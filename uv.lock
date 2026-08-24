@@ -299,16 +299,20 @@ dependencies = [
 [[package]]
 name = "bub-schedule"
 version = "0.1.0"
-source = { git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&rev=main#75c0778c7083fc9355d1c46d2816077290ae8349" }
+source = { git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&rev=main#6b42022ef3b2a8f8b302f9d6b8305487678b4646" }
 dependencies = [
     { name = "apscheduler" },
-    { name = "republic" },
 ]
 
 [[package]]
 name = "bub-web-search"
-version = "0.1.0"
-source = { git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&rev=main#75c0778c7083fc9355d1c46d2816077290ae8349" }
+version = "0.2.0"
+source = { git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&rev=main#6b42022ef3b2a8f8b302f9d6b8305487678b4646" }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+]
 
 [[package]]
 name = "certifi"
@@ -1759,21 +1763,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/bb/ce/ff942d19fce5385054650bb71a58495ddda299d94661ccc4e6e7fa44868b/rapidfuzz-3.14.5-cp314-cp314t-win32.whl", hash = "sha256:0f23e37019ec07712d58976b1ab2b889f8649a7f7c2f626a2f34ea9139e79279", size = 1803950, upload-time = "2026-04-07T11:16:10.873Z" },
     { url = "https://files.pythonhosted.org/packages/5c/0f/9aafc63f9661222b819b391c187eed29fc90ad5935f9690e5ecc2d2047a4/rapidfuzz-3.14.5-cp314-cp314t-win_amd64.whl", hash = "sha256:7d5ca9c7832e6879a707296d1463685f7c243a27846227044504741640caec66", size = 1632357, upload-time = "2026-04-07T11:16:13.1Z" },
     { url = "https://files.pythonhosted.org/packages/70/a6/51fc1b0e61e3326e1c68a61cfd0c6b3c34c843681c4b1eefbf0596f59162/rapidfuzz-3.14.5-cp314-cp314t-win_arm64.whl", hash = "sha256:3e91dcd2549b8f8d843f98ba03a17e01f3d8b72ce942adbbb6761bc58ffce813", size = 855409, upload-time = "2026-04-07T11:16:15.787Z" },
-]
-
-[[package]]
-name = "republic"
-version = "0.5.7"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "any-llm-sdk" },
-    { name = "authlib" },
-    { name = "httpx" },
-    { name = "pydantic" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/4d/40/9ebd36e489696c0904df18bf4da6edc4b87f203b55f6942d3f782c69530c/republic-0.5.7.tar.gz", hash = "sha256:74cb0a02c3dffaa3438a8f41d19b137b7c8310a7d6c2c821b81cf98d5167200a", size = 155715, upload-time = "2026-03-27T06:59:32.557Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/aa/33/26f4ad2665f96af4d02ae9c6f629e1d0c2538f22cecece3f8df6cd4c1da0/republic-0.5.7-py3-none-any.whl", hash = "sha256:702e2a3b662a91e68cc9c5b4893460dba01e02f081f309e6ce30d1e79c336db3", size = 62290, upload-time = "2026-03-27T06:59:33.458Z" },
 ]
 
 [[package]]
