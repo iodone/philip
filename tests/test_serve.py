@@ -11,7 +11,7 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from bub.channels.message import ChannelMessage
-from bub.types import TurnResult
+from bub.turn import TurnResult
 
 from philip.server.jsonrpc import METHOD_NOT_FOUND, MISSING_SESSION_ID
 from philip.server.service import Service, StreamCaptureRouter

@@ -265,8 +265,8 @@ wheels = [
 
 [[package]]
 name = "bub"
-version = "0.4.0"
-source = { git = "https://github.com/bubbuild/bub.git?rev=0.4.0#2dd63a0c0a58a4202306bf9c93df5d4dac315833" }
+version = "0.4.3"
+source = { git = "https://github.com/bubbuild/bub.git?rev=0.4.3#ae1462bec869171b605eb3b7534b4770dd331a30" }
 dependencies = [
     { name = "aiohttp" },
     { name = "any-llm-sdk" },
@@ -288,8 +288,8 @@ dependencies = [
 
 [[package]]
 name = "bub-im-bridge"
-version = "0.7.3"
-source = { git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.7.3#1e377edcb05d25876f9ab70d7ec4d965599d03ae" }
+version = "0.7.4"
+source = { git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.7.4#0845b62872eca40df34668d120865f440db6cb8a" }
 dependencies = [
     { name = "bub" },
     { name = "lark-oapi" },
@@ -1245,8 +1245,8 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.9" },
-    { name = "bub", git = "https://github.com/bubbuild/bub.git?rev=0.4.0" },
-    { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.7.3" },
+    { name = "bub", git = "https://github.com/bubbuild/bub.git?rev=0.4.3" },
+    { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.7.4" },
     { name = "bub-schedule", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&rev=main" },
     { name = "bub-web-search", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&rev=main" },
     { name = "jieba", specifier = ">=0.42" },
