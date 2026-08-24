@@ -22,8 +22,8 @@ from typing import Any
 from aiohttp import web
 from bub.channels.base import Channel
 from bub.channels.message import ChannelMessage
+from bub.streaming import StreamEvent
 from loguru import logger
-from republic import StreamEvent
 
 from philip.server.jsonrpc import (
     INVALID_REQUEST,

@@ -1,8 +1,8 @@
-"""Thin multimodal vision client using republic.LLM."""
+"""Thin multimodal vision client using any-llm-sdk (amessages)."""
 
 from __future__ import annotations
 
-from republic import LLM
+from any_llm import amessages
 
 from philip.tools.vision_settings import VisionSettings
 
@@ -11,11 +11,7 @@ class VisionClient:
     """Calls a multimodal model to produce a compressed text observation from images."""
 
     def __init__(self, settings: VisionSettings) -> None:
-        self._llm = LLM(
-            model=settings.model,
-            api_key=settings.api_key,
-            api_base=settings.api_base,
-        )
+        self._settings = settings
 
     async def inspect_images(
         self,
@@ -41,6 +37,20 @@ class VisionClient:
         )
 
         messages = [{"role": "user", "content": content}]
-        result = await self._llm.chat_async(messages=messages, max_tokens=1024)
+        response = await amessages(
+            model=self._settings.model,
+            messages=messages,
+            max_tokens=1024,
+            api_key=self._settings.api_key,
+            api_base=self._settings.api_base,
+        )
+
+        # MessageResponse.content is a list of content blocks; text lives on
+        # text-type blocks. Concatenate them to get the observation.
+        result = "".join(
+            block.text
+            for block in response.content
+            if getattr(block, "type", None) == "text" and getattr(block, "text", None)
+        )
 
         return result.strip() or "Image observation: no useful visual detail extracted."

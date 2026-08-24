@@ -5,8 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from unittest.mock import AsyncMock, patch
 
-from republic import ToolContext
+from bub.tools import ToolContext
 
+from philip.tools.vision_client import VisionClient
 from philip.tools.vision_settings import VisionSettings
 
 # ---------------------------------------------------------------------------
@@ -216,3 +217,73 @@ async def test_tool_passes_message_content_not_metadata_to_vision(monkeypatch):
     call_kwargs = instance.inspect_images.call_args.kwargs
     assert call_kwargs["text"] == "帮我看看这张报错截图怎么修"
     assert "channel=" not in call_kwargs["text"]
+
+
+# ---------------------------------------------------------------------------
+# Vision client tests (any-llm amessages path)
+# ---------------------------------------------------------------------------
+
+
+class _FakeBlock:
+    def __init__(self, type_: str, text: str | None = None) -> None:
+        self.type = type_
+        self.text = text
+
+
+class _FakeResponse:
+    def __init__(self, blocks: list[_FakeBlock]) -> None:
+        self.content = blocks
+
+
+async def test_vision_client_uses_amessages_and_extracts_text(monkeypatch):
+    """VisionClient calls any_llm.amessages with image content and extracts text."""
+    captured: dict = {}
+
+    async def fake_amessages(**kwargs):
+        captured.update(kwargs)
+        return _FakeResponse(
+            [_FakeBlock("text", "可见报错文本：Connection refused"), _FakeBlock("text", "")]
+        )
+
+    monkeypatch.setattr("philip.tools.vision_client.amessages", fake_amessages)
+
+    settings = VisionSettings(
+        vision_model="openai:gpt-4.1-mini",
+        vision_api_key="sk-test",
+        vision_api_base="https://api.example.com/v1",
+    )
+    client = VisionClient(settings)
+    result = await client.inspect_images(
+        text="看看这张报错截图",
+        image_urls=["https://example.com/shot.png"],
+    )
+
+    assert captured["model"] == "openai:gpt-4.1-mini"
+    assert captured["api_key"] == "sk-test"
+    assert captured["api_base"] == "https://api.example.com/v1"
+    assert captured["max_tokens"] == 1024
+    assert captured["messages"][0]["content"][0]["type"] == "text"
+    assert captured["messages"][0]["content"][1]["image_url"]["url"] == (
+        "https://example.com/shot.png"
+    )
+    assert result == "可见报错文本：Connection refused"
+
+
+async def test_vision_client_fallback_when_no_text(monkeypatch):
+    """VisionClient returns the fallback when the model returns no text blocks."""
+
+    async def fake_amessages(**kwargs):
+        return _FakeResponse([])
+
+    monkeypatch.setattr("philip.tools.vision_client.amessages", fake_amessages)
+
+    settings = VisionSettings(
+        vision_model="openai:gpt-4.1-mini",
+        vision_api_key="sk-test",
+        vision_api_base="https://api.example.com/v1",
+    )
+    client = VisionClient(settings)
+    result = await client.inspect_images(
+        text="", image_urls=["https://example.com/x.png"]
+    )
+    assert result == "Image observation: no useful visual detail extracted."

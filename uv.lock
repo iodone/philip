@@ -288,8 +288,8 @@ dependencies = [
 
 [[package]]
 name = "bub-im-bridge"
-version = "0.7.4"
-source = { git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.7.4#0845b62872eca40df34668d120865f440db6cb8a" }
+version = "0.7.5"
+source = { git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.7.5#f6df360e913aeaa5177084d73c969c2a0fc712d3" }
 dependencies = [
     { name = "bub" },
     { name = "lark-oapi" },
@@ -1217,17 +1217,17 @@ wheels = [
 
 [[package]]
 name = "philip"
-version = "0.3.1"
+version = "0.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
+    { name = "any-llm-sdk" },
     { name = "bub" },
     { name = "bub-im-bridge" },
     { name = "bub-schedule" },
     { name = "bub-web-search" },
     { name = "jieba" },
     { name = "python-frontmatter" },
-    { name = "republic" },
     { name = "ripgrepy" },
     { name = "rub" },
     { name = "toml" },
@@ -1246,13 +1246,13 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.9" },
+    { name = "any-llm-sdk", specifier = ">=1.13.0" },
     { name = "bub", git = "https://github.com/bubbuild/bub.git?rev=0.4.3" },
-    { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.7.4" },
+    { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?rev=v0.7.5" },
     { name = "bub-schedule", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&rev=main" },
     { name = "bub-web-search", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&rev=main" },
     { name = "jieba", specifier = ">=0.42" },
     { name = "python-frontmatter", specifier = ">=1.0" },
-    { name = "republic", specifier = ">=0.5.7" },
     { name = "ripgrepy", specifier = ">=2.2" },
     { name = "rub", git = "https://github.com/iodone/rubick.git?rev=main" },
     { name = "toml", specifier = ">=0.10" },

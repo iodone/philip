@@ -22,7 +22,7 @@ from philip.server.session_store import SessionStore
 
 @dataclass(frozen=True)
 class FakeStreamEvent:
-    """Mimics republic.StreamEvent without importing republic."""
+    """Mimics bub.streaming.StreamEvent without importing bub."""
 
     kind: str
     data: dict[str, Any] = field(default_factory=dict)

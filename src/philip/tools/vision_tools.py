@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from bub.tools import tool
+from bub.tools import ToolContext, tool
 from pydantic import BaseModel, Field
-from republic import ToolContext
 
 from philip.tools.vision_client import VisionClient
 from philip.tools.vision_settings import VisionSettings
