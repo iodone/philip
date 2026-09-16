@@ -10,7 +10,6 @@ from philip.capabilities.wiki.config import (
 )
 from philip.capabilities.wiki.graph import GraphAnalysis, analyze_graph
 from philip.capabilities.wiki.search import bm25_search, parse_blocks, tokenize, tiered_rank
-from philip.capabilities.wiki.skills import install_skills_to, list_skills
 from philip.capabilities.wiki.sync import (
     SyncResult,
     SyncState,
@@ -52,7 +51,4 @@ __all__ = [
     "load_sync_state",
     "save_sync_state",
     "update_sync_state",
-    # skills
-    "install_skills_to",
-    "list_skills",
 ]

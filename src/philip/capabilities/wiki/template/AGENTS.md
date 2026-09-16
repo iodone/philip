@@ -11,9 +11,9 @@ Before doing anything else:
 1. Read `rules/SOUL.md` — this is who you are
 2. Read `rules/USER.md` — this is who you're helping
 3. Read `rules/WORKSPACE.md` — file routing table, check before searching for files
-5. Read `rules/COMMUNICATION.md` — how to think and communicate (especially for non-coding tasks)
-6. Read `rules/skills/INDEX.md` — understand available skills
-7. Read `rules/SECURITY.md` — security rules for commands, file writes, network requests, and external output
+4. Read `rules/COMMUNICATION.md` — how to think and communicate (especially for non-coding tasks)
+5. Read `rules/skills/INDEX.md` — understand available skills
+6. Read `rules/SECURITY.md` — security rules for commands, file writes, network requests, and external output
 
 Don't ask permission. Just do it.
 
@@ -58,11 +58,6 @@ Don't ask permission. Just do it.
 **深度调研任务** → `.agents/skills/workflow-deep-research-survey/SKILL.md`  
 - 初步扫描 → 分割维度 → 多 Agent 并行 → 交叉验证 → 写报告  
 - 输出：`contexts/survey_sessions/`
-
-**调用后台 Agent / 并行 Subagent** → `.agents/skills/workflow-parallel-subagents/SKILL.md`  
-- 何时拆分任务、如何并行派出多个 subagent  
-- 准备调用 `run_in_background=True` 前，先把这个 skill 读一遍再执行  
-- 派出 agent 后等系统通知即可，不需要轮询
 
 **维护 Wiki** → `.agents/skills/workflow-llm-wiki/SKILL.md`  
 - 负责 wiki 的 ingest / query / lint / research  
@@ -153,22 +148,14 @@ Don't ask permission. Just do it.
 
 ---
 
-## 6. Axioms（公理）
+## 6. Memory System（记忆系统）
 
-从个人经历提炼的决策原则，用于启发深度思考。分类索引、使用指南和触发词见 `rules/axioms/INDEX.md`。
-
----
-
-## 7. Memory System（记忆系统）
-
-三层记忆架构：
+两层记忆架构：
 - **L3（全局约束）**：`rules/` 下的所有文件，每次 session 被动加载
 - **L1/L2（动态记忆）**：`contexts/memory/OBSERVATIONS.md`，agent 主动检索
-- **自动积累**：定时调度，hearbeat 每日 observer + 每周 reflector
-
 
 ---
 
-## 8. Safety
+## 7. Safety
 
 Use `rules/SECURITY.md` as the source of truth for security decisions.

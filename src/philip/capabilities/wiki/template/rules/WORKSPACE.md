@@ -7,7 +7,7 @@
 | 操作 | Owner  | 管理员 (admin) | 访客 (Other) |
 |:---|:---|:---|:---|
 | 读取公开入口文件（`AGENTS.md`、`rules/SOUL.md`、`rules/WORKSPACE.md`） | ✅ | ✅ | ✅ |
-| 读取私有规则（`rules/USER.md`、`rules/COMMUNICATION.md`、`rules/SECURITY.md`、`rules/axioms/`、`rules/skills/`） | ✅ | ❌ | ❌ |
+| 读取私有规则（`rules/USER.md`、`rules/COMMUNICATION.md`、`rules/SECURITY.md`、`rules/skills/`） | ✅ | ❌ | ❌ |
 | 读取内容目录（`contexts/`、`wiki/`） | ✅ | ❌ | ❌ |
 | 读取 `.agents/skills/` 内容 | ✅ | ❌ | ❌ |
 | 写入任何文件 | ✅ | ❌ | ❌ |
@@ -46,7 +46,6 @@
 
 - Skill 索引与说明：`rules/skills/`
 - 运行时 Skill：`.agents/skills/`
-- 核心公理（Axioms）：`rules/axioms/`
 - 记忆系统：`contexts/memory/`
 
 ## 命名规则

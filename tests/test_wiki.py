@@ -666,30 +666,35 @@ class TestSync:
 
 
 class TestSkills:
-    def test_list_skills(self) -> None:
-        from philip.capabilities.wiki.skills import list_skills
+    """Agent skills ship inside the template tree, so wiki.init seeds them
+    like any other template artefact. There is no separate skill installer."""
 
-        skills = list_skills()
-        assert "workflow-llm-wiki" in skills
+    SKILL_REL = ".agents/skills/workflow-llm-wiki/SKILL.md"
 
-    def test_install_skills_to(self, tmp_path: Path) -> None:
-        from philip.capabilities.wiki.skills import install_skills_to
+    def _init(self, target: Path, *, force: bool = False) -> dict:
+        from philip.cli.wiki.init import execute
 
-        target = tmp_path / "installed"
-        result = install_skills_to(target)
-        assert "workflow-llm-wiki" in result.installed
-        assert (target / "workflow-llm-wiki" / "SKILL.md").exists()
+        return execute({"directory": str(target), "force": force}).data
 
-    def test_install_skills_no_overwrite(self, tmp_path: Path) -> None:
-        from philip.capabilities.wiki.skills import install_skills_to
+    def test_init_seeds_agent_skills(self, tmp_path: Path) -> None:
+        data = self._init(tmp_path)
 
-        target = tmp_path / "installed"
+        assert (tmp_path / self.SKILL_REL).is_file()
+        assert self.SKILL_REL in data["created"]
 
-        # First install
-        result1 = install_skills_to(target, overwrite=False)
-        assert "workflow-llm-wiki" in result1.installed
+    def test_init_skips_existing_without_force(self, tmp_path: Path) -> None:
+        self._init(tmp_path)
+        data = self._init(tmp_path)
 
-        # Second install with no overwrite
-        result2 = install_skills_to(target, overwrite=False)
-        assert "workflow-llm-wiki" in result2.skipped
-        assert "workflow-llm-wiki" not in result2.installed
+        assert self.SKILL_REL in data["skipped"]
+        assert self.SKILL_REL not in data["created"]
+
+    def test_init_force_rewrites_seeded_skill(self, tmp_path: Path) -> None:
+        self._init(tmp_path)
+        seeded = tmp_path / self.SKILL_REL
+        seeded.write_text("clobbered", encoding="utf-8")
+
+        data = self._init(tmp_path, force=True)
+
+        assert self.SKILL_REL in data["created"]
+        assert seeded.read_text(encoding="utf-8") != "clobbered"

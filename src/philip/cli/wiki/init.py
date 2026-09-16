@@ -66,7 +66,6 @@ DETAILS: dict[str, OperationDetail] = {
 
 def execute(args: dict[str, Any]) -> ExecutionResult:
     from philip.capabilities.wiki.config import _TEMPLATES_DIR
-    from philip.capabilities.wiki.skills import install_skills_to
 
     target = Path(args.get("directory", ".")).resolve()
     force = bool(args.get("force", False))
@@ -95,6 +94,8 @@ def execute(args: dict[str, Any]) -> ExecutionResult:
     created: list[str] = []
     skipped: list[str] = []
 
+    # The template tree carries every seed artefact, agent skills included
+    # (template/.agents/skills/). One copy loop, one source of truth.
     for src_file in sorted(_TEMPLATES_DIR.rglob("*")):
         if not src_file.is_file():
             continue
@@ -107,17 +108,6 @@ def execute(args: dict[str, Any]) -> ExecutionResult:
             created.append(rel_str)
         else:
             skipped.append(rel_str)
-
-    skill_result = install_skills_to(paths.agents_skills_dir, overwrite=force)
-    skill_installed = [
-        f".agents/skills/{name}/SKILL.md" for name in skill_result.installed
-    ]
-    skill_skipped = [f".agents/skills/{name}/SKILL.md" for name in skill_result.skipped]
-    if not force:
-        created.extend(skill_installed)
-        skipped.extend(skill_skipped)
-    elif skill_installed:
-        created.extend(skill_installed)
 
     return ExecutionResult(
         data={"target": str(target), "created": created, "skipped": skipped}

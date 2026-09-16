@@ -13,7 +13,6 @@ A knowledge workspace managed by [Philip](https://github.com/iodone/philip) and 
 │   ├── COMMUNICATION.md    # Collaboration style
 │   ├── SECURITY.md         # Safety boundaries
 │   ├── WORKSPACE.md        # Directory routing reference
-│   ├── axioms/             # Stable judgment rules
 │   └── skills/             # Skill index & classification
 ├── .agents/skills/         # Executable skill files
 ├── contexts/               # Input layer for wiki ingest
