@@ -1,11 +1,11 @@
 # CLI Capabilities — Wiki
 
-Wiki 是 Philip 的知识库管理能力，提供 workspace 初始化、BM25/向量搜索、链接图分析和变更同步。
+Wiki 是 Philip 的知识库管理能力，提供 workspace 初始化、BM25 + ripgrep 搜索、链接图分析和变更同步。
 
 ## 初始化
 
 ```bash
-philip wiki.init /path/to/workspace
+philip wiki.init directory=/path/to/workspace
 ```
 
 创建完整 workspace 结构：
@@ -53,11 +53,11 @@ philip wiki.init /path/to/workspace
 
 ```bash
 philip wiki.search query=<query>
-philip wiki.search query=<query> bm25_only=true   # 跳过向量搜索
 philip wiki.search query=<query> limit=20         # 更多结果
+philip wiki.search exact_terms='["Falcon"]' fuzzy_terms='["慢查询","报警"]'   # 结构化输入：精确词 + 语义词
 ```
 
-默认使用 BM25 搜索（支持 CJK 分词）。配置 DB9 后自动启用向量搜索 + RRF 融合。
+BM25（jieba 分词，支持 CJK）负责语义召回，ripgrep 负责精确匹配（`exact_terms` 原样拼正则）；两者按 tiered ranking 融合，精确命中优先。搜索为运行时内存计算，无外部索引或数据库依赖。
 
 ## 同步
 
@@ -66,7 +66,7 @@ philip wiki.sync
 philip wiki.sync dry_run=true   # 仅展示变更，不更新状态
 ```
 
-基于 mtime + SHA-256 内容哈希检测变更。配置 DB9 后自动将变更推送到 PostgreSQL。
+基于 mtime + SHA-256 内容哈希检测变更（added/modified/deleted），更新本地同步状态。
 
 ## 图分析
 
@@ -88,19 +88,6 @@ philip wiki.status
 
 输出 wiki 健康概览：页面数、contexts 数、链接数、最近修改、健康问题。
 
-## DB9 配置
-
-在 workspace 的 `.llm-wiki/config.toml` 中启用：
-
-```toml
-[db9]
-url = "postgresql://localhost/my_wiki"
-```
-
-需要：
-- PostgreSQL + pgvector 扩展
-- 1024 维 HNSW 余弦索引（由 `philip wiki.sync` 自动创建）
-
 ## 配置参考
 
 ### Vault 配置（`.llm-wiki/config.toml`）
@@ -112,4 +99,3 @@ url = "postgresql://localhost/my_wiki"
 | `vault.context_dir` | 输入目录名 | `contexts` |
 | `vault.wiki_dir` | Wiki 目录名 | `wiki` |
 | `vault.pages_subdir` | 页面子目录名 | `pages` |
-| `db9.url` | PostgreSQL 连接串 | — |

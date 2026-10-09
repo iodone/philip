@@ -177,7 +177,7 @@ def test_wiki_sync_dry_run(tmp_path: Path):
 
 
 # ---------------------------------------------------------------------------
-# DB9 integration tests (mocked psycopg2)
+# Wiki search / sync integration tests
 # ---------------------------------------------------------------------------
 
 
