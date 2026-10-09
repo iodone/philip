@@ -20,15 +20,15 @@ cp .env.example .env && vim .env
 uv run philip gateway.start workspace=/path/to/workspace
 ```
 
-需要全局 `philip` 命令时（agent 跑 bash、RPC 联调等场景），用 `uv tool install git+https://github.com/iodone/philip.git` 安装，见 [docs/JSONRPC_CHANNEL.md](docs/JSONRPC_CHANNEL.md)。
+需要全局 `philip` 命令时（agent 跑 bash、RPC 联调等场景），用 `uv tool install git+https://github.com/iodone/philip.git` 安装。
 
 ## CLI 命令
 
 | 命令 | 说明 |
 |:---|:---|
 | `philip wiki.init directory=<dir>` | 初始化 workspace |
-| `philip wiki.search query=<text>` | BM25 搜索（配置 DB9 后自动启用向量 + RRF） |
-| `philip wiki.sync` | 变更检测，可选推送到 DB9 |
+| `philip wiki.search query=<text>` | BM25 搜索（+ ripgrep 精确匹配，exact 优先） |
+| `philip wiki.sync` | 变更检测（mtime + 内容哈希），更新同步状态 |
 | `philip wiki.graph` | 链接图分析 |
 | `philip wiki.status` | wiki 健康概览 |
 | `philip gateway.start [workspace=<dir>] [enable_channel=<name>]` | 启动 message listeners |
@@ -92,7 +92,7 @@ philip my.echo message=hello
 
 ## 文档
 
-- [Wiki CLI 详细用法](docs/WIKI.md) — wiki 命令详解、workspace 结构、DB9 配置
+- [Wiki CLI 详细用法](docs/WIKI.md) — wiki 命令详解、workspace 结构
 - [JSON-RPC Channel API](docs/JSONRPC_CHANNEL.md) — gateway RPC 端点、宿主机模式（run-host.sh）
 - [Docker 部署指南](docs/DOCKER_USAGE.md) — 容器部署与 boxsh 沙箱隔离
 
