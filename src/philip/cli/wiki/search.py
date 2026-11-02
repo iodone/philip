@@ -65,7 +65,10 @@ DETAILS: dict[str, OperationDetail] = {
         return_type="object",
         invocation_examples=[
             "philip wiki.search query=agent",
-            'philip wiki.search exact_terms=\'["Falcon"]\' fuzzy_terms=\'["慢查询","报警","alert"]\'',
+            (
+                "philip wiki.search exact_terms='[\"Falcon\"]' "
+                'fuzzy_terms=\'["慢查询","报警","alert"]\''
+            ),
             'philip wiki.search exact_terms=\'["BM25","ripgrep"]\'',
             'philip wiki.search fuzzy_terms=\'["知识库","编译","索引"]\'',
             "philip wiki.search query=architecture limit=5",
@@ -109,9 +112,7 @@ def execute(args: dict[str, Any]) -> ExecutionResult:
         fuzzy_terms = [query]
 
     if not exact_terms and not fuzzy_terms:
-        raise InvalidArgumentsError(
-            "Provide either query or exact_terms/fuzzy_terms"
-        )
+        raise InvalidArgumentsError("Provide either query or exact_terms/fuzzy_terms")
 
     root = require_vault_root()
     config = load_config(root)
@@ -140,13 +141,15 @@ def execute(args: dict[str, Any]) -> ExecutionResult:
     # Context assembly
     snippets = []
     for r in results:
-        snippets.append({
-            "source": r.block.file_path,
-            "section": r.block.header or "(top)",
-            "lines": [r.block.line_start, r.block.line_end],
-            "type": r.match_type,
-            "content": r.block.content.strip(),
-        })
+        snippets.append(
+            {
+                "source": r.block.file_path,
+                "section": r.block.header or "(top)",
+                "lines": [r.block.line_start, r.block.line_end],
+                "type": r.match_type,
+                "content": r.block.content.strip(),
+            }
+        )
 
     return ExecutionResult(
         data={

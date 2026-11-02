@@ -9,7 +9,12 @@ from philip.capabilities.wiki.config import (
     vault_paths,
 )
 from philip.capabilities.wiki.graph import GraphAnalysis, analyze_graph
-from philip.capabilities.wiki.search import bm25_search, parse_blocks, tokenize, tiered_rank
+from philip.capabilities.wiki.search import (
+    bm25_search,
+    parse_blocks,
+    tiered_rank,
+    tokenize,
+)
 from philip.capabilities.wiki.sync import (
     SyncResult,
     SyncState,

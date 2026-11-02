@@ -7,15 +7,15 @@ requires-python = ">=3.12"
 dependencies = [
     "aiohttp>=3.9",
     "any-llm-sdk>=1.13.0",
-    "bub @ git+https://github.com/bubbuild/bub.git@0.4.3",
-    "bub-im-bridge @ git+https://github.com/iodone/bub-im-bridge.git@v0.7.5",
+    "bub[app] @ git+https://github.com/bubbuild/bub.git@0.6.0",
+    "bub-im-bridge @ git+https://github.com/iodone/bub-im-bridge.git@4c6587e",
     "bub-web-search @ git+https://github.com/bubbuild/bub-contrib.git@main#subdirectory=packages/bub-web-search",
     "bub-schedule @ git+https://github.com/bubbuild/bub-contrib.git@main#subdirectory=packages/bub-schedule",
     "jieba>=0.42",
     "python-frontmatter>=1.0",
     "ripgrepy>=2.2",
     "rub @ git+https://github.com/iodone/rubick.git@main",
-    "toml>=0.10",
+    "types-PyYAML>=6.0",
 ]
 
 [project.scripts]
@@ -63,6 +63,28 @@ select = ["E", "F", "I", "UP"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
+mypy_path = "src"
+
+[[tool.mypy.overrides]]
+module = [
+    "bub.*",
+    "jieba.*",
+    "ripgrepy.*",
+    "rub.*",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "philip.channels.jsonrpc_channel",
+    "philip.cli.adapter",
+    "philip.plugins.plugin",
+    "philip.tools.vision_tools",
+]
+disable_error_code = ["misc"]
+disallow_any_generics = false
+disallow_untyped_decorators = false
+warn_return_any = false
 
 [tool.black]
 line-length = 88

@@ -9,7 +9,7 @@ import json
 import math
 import re
 import warnings
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 # Suppress jieba's SyntaxWarnings from invalid regex escapes (Python 3.14)
@@ -99,14 +99,16 @@ def parse_blocks(file_path: str, content: str, wiki_dir: str) -> list[Block]:
         if _HEADER_RE.match(line):
             # Flush previous block
             if current_lines:
-                blocks.append(Block(
-                    file_path=file_path,
-                    slug=slug,
-                    header=current_header,
-                    content="\n".join(current_lines),
-                    line_start=line_start,
-                    line_end=i - 1,
-                ))
+                blocks.append(
+                    Block(
+                        file_path=file_path,
+                        slug=slug,
+                        header=current_header,
+                        content="\n".join(current_lines),
+                        line_start=line_start,
+                        line_end=i - 1,
+                    )
+                )
             current_header = line.strip()
             current_lines = [line]
             line_start = i
@@ -115,14 +117,16 @@ def parse_blocks(file_path: str, content: str, wiki_dir: str) -> list[Block]:
 
     # Final block
     if current_lines:
-        blocks.append(Block(
-            file_path=file_path,
-            slug=slug,
-            header=current_header,
-            content="\n".join(current_lines),
-            line_start=line_start,
-            line_end=len(lines),
-        ))
+        blocks.append(
+            Block(
+                file_path=file_path,
+                slug=slug,
+                header=current_header,
+                content="\n".join(current_lines),
+                line_start=line_start,
+                line_end=len(lines),
+            )
+        )
 
     return blocks
 
@@ -207,7 +211,9 @@ def bm25_search(
     for i, block in enumerate(blocks):
         score = _score_bm25(index, query_tokens, i)
         if score > 0:
-            results.append(SearchResult(block=block, score=score, match_type="semantic"))
+            results.append(
+                SearchResult(block=block, score=score, match_type="semantic")
+            )
 
     results.sort(key=lambda r: r.score, reverse=True)
     return results[:limit]
@@ -362,7 +368,11 @@ def tiered_rank(
         grep_hit = key in grep_block_keys
 
         if grep_hit and has_exact:
-            tier1.append(SearchResult(block=r.block, score=r.score + _VIP_SCORE_BONUS, match_type="exact"))
+            tier1.append(
+                SearchResult(
+                    block=r.block, score=r.score + _VIP_SCORE_BONUS, match_type="exact"
+                )
+            )
         else:
             tier2.append(r)
 
@@ -379,7 +389,13 @@ def tiered_rank(
                         block_text_lower = block.content.lower()
                         has_exact = any(t in block_text_lower for t in exact_term_set)
                         if has_exact:
-                            tier1.append(SearchResult(block=block, score=_VIP_SCORE_BONUS, match_type="exact"))
+                            tier1.append(
+                                SearchResult(
+                                    block=block,
+                                    score=_VIP_SCORE_BONUS,
+                                    match_type="exact",
+                                )
+                            )
                     break
 
     # Sort each tier

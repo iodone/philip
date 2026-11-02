@@ -62,10 +62,12 @@ class JsonRpcChannel(Channel):
         self._runner: web.AppRunner | None = None
         self._site: web.TCPSite | None = None
         # session_id → deque of (request_id, Future) for HTTP/WS unary
-        self._pending: dict[str, deque[tuple[str, asyncio.Future[dict[str, Any]]]]] = {}
+        self._pending: dict[
+            str, deque[tuple[str | int | None, asyncio.Future[dict[str, Any]]]]
+        ] = {}
         # session_id → (request_id, Queue) for WS stream
         self._stream_queues: dict[
-            str, tuple[str, asyncio.Queue[StreamEvent | None]]
+            str, tuple[str | int | None, asyncio.Queue[StreamEvent | None]]
         ] = {}
 
     # ── Channel lifecycle ──────────────────────────────────────────
@@ -282,10 +284,14 @@ class JsonRpcChannel(Channel):
                     continue
 
                 if parsed.method == "chat.stream":
+                    if not isinstance(session_id, str):
+                        raise TypeError("chat.stream requires a session ID")
                     await self._handle_ws_stream(ws, parsed, session_id, request_id)
                     continue
 
                 if parsed.method == "chat.send":
+                    if not isinstance(session_id, str):
+                        raise TypeError("chat.send requires a session ID")
                     await self._handle_ws_send(ws, parsed, session_id, request_id)
                     continue
 
@@ -305,7 +311,7 @@ class JsonRpcChannel(Channel):
         ws: web.WebSocketResponse,
         parsed: Any,
         session_id: str,
-        request_id: str,
+        request_id: str | int | None,
     ) -> None:
         message = parsed.params.get("message", "")
         future: asyncio.Future[dict[str, Any]] = (
@@ -335,7 +341,7 @@ class JsonRpcChannel(Channel):
         ws: web.WebSocketResponse,
         parsed: Any,
         session_id: str,
-        request_id: str,
+        request_id: str | int | None,
     ) -> None:
         if session_id in self._stream_queues:
             await ws.send_json(
@@ -453,7 +459,7 @@ class JsonRpcChannel(Channel):
 
     # ── Helpers ────────────────────────────────────────────────────
 
-    def _remove_pending(self, session_id: str, request_id: str) -> None:
+    def _remove_pending(self, session_id: str, request_id: str | int | None) -> None:
         """Remove a specific request from the pending deque."""
         pending_deque = self._pending.get(session_id)
         if pending_deque is None:

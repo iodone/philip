@@ -26,15 +26,6 @@ from rub.adapter import Adapter, ExecutionResult
 from rub.schema import Operation, OperationDetail
 
 from philip.cli import chat
-from philip.cli.wiki import (
-    _EXECUTE as _WIKI_EXECUTE,
-)
-from philip.cli.wiki import (
-    DETAILS as _WIKI_DETAILS,
-)
-from philip.cli.wiki import (
-    OPERATIONS as _WIKI_OPS,
-)
 from philip.cli.gateway import (
     _EXECUTE as _GATEWAY_EXECUTE,
 )
@@ -44,16 +35,24 @@ from philip.cli.gateway import (
 from philip.cli.gateway import (
     OPERATIONS as _GATEWAY_OPS,
 )
-
+from philip.cli.wiki import (
+    _EXECUTE as _WIKI_EXECUTE,
+)
+from philip.cli.wiki import (
+    DETAILS as _WIKI_DETAILS,
+)
+from philip.cli.wiki import (
+    OPERATIONS as _WIKI_OPS,
+)
 
 # ---------------------------------------------------------------------------
 # Extension discovery
 # ---------------------------------------------------------------------------
 
 
-def _load_extensions() -> tuple[
-    list[Operation], dict[str, OperationDetail], dict[str, tuple[bool, Any]]
-]:
+def _load_extensions() -> (
+    tuple[list[Operation], dict[str, OperationDetail], dict[str, tuple[bool, Any]]]
+):
     """Scan ``philip.extensions`` entry points and return merged registries."""
     ops: list[Operation] = []
     details: dict[str, OperationDetail] = {}

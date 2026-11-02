@@ -39,7 +39,9 @@ DETAILS: dict[str, OperationDetail] = {
     "wiki.sync": OperationDetail(
         operation_id="wiki.sync",
         display_name="Wiki Sync",
-        description="Track file changes (added/modified/deleted) and update sync state.",
+        description=(
+            "Track file changes (added/modified/deleted) and update sync state."
+        ),
         parameters=OPERATIONS[0].parameters,
         return_type="object",
         invocation_examples=[

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 from typer.testing import CliRunner
 
@@ -221,7 +220,7 @@ def test_wiki_sync_basic(tmp_path: Path):
     assert result.exit_code == 0
 
 
-def test_wiki_sync_dry_run(tmp_path: Path):
+def test_wiki_sync_dry_run_integration(tmp_path: Path):
     target = str(tmp_path / "my-wiki")
     _invoke("wiki.init", f"directory={target}")
 
