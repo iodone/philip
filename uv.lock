@@ -13,6 +13,9 @@ resolution-markers = [
     "python_full_version < '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 
+[manifest]
+overrides = [{ name = "bub", extras = ["app"], git = "https://github.com/bubbuild/bub.git?rev=0.6.0" }]
+
 [[package]]
 name = "aiohappyeyeballs"
 version = "2.6.1"
@@ -359,17 +362,21 @@ dependencies = [
 [[package]]
 name = "bub-schedule"
 version = "0.1.0"
-source = { git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&rev=main#6b42022ef3b2a8f8b302f9d6b8305487678b4646" }
+source = { git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&rev=35c84fb#35c84fbc0b8339e5f3c94efb35a83adad292d067" }
 dependencies = [
     { name = "apscheduler" },
+    { name = "bub", extra = ["app"] },
+    { name = "loguru" },
+    { name = "pydantic" },
 ]
 
 [[package]]
 name = "bub-web-search"
 version = "0.2.0"
-source = { git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&rev=main#6b42022ef3b2a8f8b302f9d6b8305487678b4646" }
+source = { git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&rev=35c84fb#35c84fbc0b8339e5f3c94efb35a83adad292d067" }
 dependencies = [
     { name = "aiohttp" },
+    { name = "bub", extra = ["app"] },
     { name = "pydantic" },
     { name = "pydantic-settings" },
 ]
@@ -1361,8 +1368,8 @@ requires-dist = [
     { name = "any-llm-sdk", specifier = ">=1.13.0" },
     { name = "bub", extras = ["app"], git = "https://github.com/bubbuild/bub.git?rev=0.6.0" },
     { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?rev=4c6587e" },
-    { name = "bub-schedule", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&rev=main" },
-    { name = "bub-web-search", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&rev=main" },
+    { name = "bub-schedule", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&rev=35c84fb" },
+    { name = "bub-web-search", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&rev=35c84fb" },
     { name = "jieba", specifier = ">=0.42" },
     { name = "python-frontmatter", specifier = ">=1.0" },
     { name = "ripgrepy", specifier = ">=2.2" },
