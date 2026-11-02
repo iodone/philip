@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from bub.tools import ToolContext, tool
+from bub.core.tools import ToolContext, tool
 from pydantic import BaseModel, Field
 
 from philip.tools.vision_client import VisionClient
@@ -78,7 +78,7 @@ async def vision_inspect_tool(
     return observation
 
 
-# Register as a Bub tool via the @tool decorator
+# Convert the handler to a Tool; PhilipPlugin exposes it via provide_tools.
 @tool(name="vision.inspect_current_images", model=VisionInspectInput, context=True)
 async def inspect_current_images(
     params: VisionInspectInput, *, context: ToolContext

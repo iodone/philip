@@ -63,7 +63,7 @@ uv run black .
 
 # 运行 lint 检查
 uv run ruff check .
-uv run mypy philip
+uv run mypy src/philip
 
 # 运行测试
 uv run pytest
@@ -93,7 +93,7 @@ git checkout -b feat/my-feature
 uv sync --group dev
 uv run black .
 uv run ruff check .
-uv run mypy philip
+uv run mypy src/philip
 uv run pytest
 
 # 5. 提交
@@ -184,7 +184,7 @@ format -> lint -> type-check -> test -> build
 |------|------|------|
 | format | `uv run black .` | 统一格式 |
 | lint | `uv run ruff check .` | 静态检查 |
-| type-check | `uv run mypy philip` | 严格类型检查 |
+| type-check | `uv run mypy src/philip` | 严格类型检查 |
 | test | `uv run pytest` | 回归验证 |
 | build | `uv build` | 验证可构建 |
 

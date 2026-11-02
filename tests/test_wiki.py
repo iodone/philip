@@ -298,7 +298,10 @@ class TestSearch:
                 file_path="b.md",
                 slug="web-development",
                 header="# Web Development",
-                content="# Web Development\nBuilding web applications with HTML, CSS, and JavaScript.",
+                content=(
+                    "# Web Development\n"
+                    "Building web applications with HTML, CSS, and JavaScript."
+                ),
                 line_start=1,
                 line_end=2,
             ),
@@ -347,7 +350,10 @@ class TestSearch:
     def test_parse_blocks(self) -> None:
         from philip.capabilities.wiki.search import parse_blocks
 
-        content = "# Title\n\nIntro text\n\n## Section A\n\nContent A\n\n### Sub\n\nSub content\n\n## Section B\n\nContent B"
+        content = (
+            "# Title\n\nIntro text\n\n## Section A\n\nContent A\n\n"
+            "### Sub\n\nSub content\n\n## Section B\n\nContent B"
+        )
         blocks = parse_blocks("/wiki/test.md", content, "/wiki")
         assert len(blocks) == 4
         assert blocks[0].header == "# Title"
@@ -361,14 +367,34 @@ class TestSearch:
 
         # Create actual files so grep can find them
         wiki_dir = str(tmp_path)
-        (tmp_path / "a.md").write_text("# Falcon 慢查询\nFalcon 慢查询报警排查\n", encoding="utf-8")
-        (tmp_path / "b.md").write_text("# Web Dev\nHTML CSS JavaScript\n", encoding="utf-8")
+        (tmp_path / "a.md").write_text(
+            "# Falcon 慢查询\nFalcon 慢查询报警排查\n", encoding="utf-8"
+        )
+        (tmp_path / "b.md").write_text(
+            "# Web Dev\nHTML CSS JavaScript\n", encoding="utf-8"
+        )
         (tmp_path / "c.md").write_text("# 分布式\n分布式系统设计\n", encoding="utf-8")
 
         blocks = [
-            Block(f"{wiki_dir}/a.md", "a", "# Falcon 慢查询", "# Falcon 慢查询\nFalcon 慢查询报警排查", 1, 3),
-            Block(f"{wiki_dir}/b.md", "b", "# Web Dev", "# Web Dev\nHTML CSS JavaScript", 1, 2),
-            Block(f"{wiki_dir}/c.md", "c", "# 分布式", "# 分布式\n分布式系统设计", 1, 2),
+            Block(
+                f"{wiki_dir}/a.md",
+                "a",
+                "# Falcon 慢查询",
+                "# Falcon 慢查询\nFalcon 慢查询报警排查",
+                1,
+                3,
+            ),
+            Block(
+                f"{wiki_dir}/b.md",
+                "b",
+                "# Web Dev",
+                "# Web Dev\nHTML CSS JavaScript",
+                1,
+                2,
+            ),
+            Block(
+                f"{wiki_dir}/c.md", "c", "# 分布式", "# 分布式\n分布式系统设计", 1, 2
+            ),
         ]
         results = tiered_rank(blocks, ["Falcon"], ["慢查询"], wiki_dir, limit=5)
         assert len(results) > 0
@@ -412,15 +438,18 @@ class TestSearch:
         results = [
             SearchResult(
                 Block("/wiki/a.md", "a", "# A", "content", 1, 5),
-                score=3.0, match_type="semantic",
+                score=3.0,
+                match_type="semantic",
             ),
             SearchResult(
                 Block("/wiki/a.md", "a", "# A", "content", 6, 10),
-                score=2.0, match_type="semantic",
+                score=2.0,
+                match_type="semantic",
             ),
             SearchResult(
                 Block("/wiki/b.md", "b", "# B", "other", 1, 3),
-                score=1.0, match_type="semantic",
+                score=1.0,
+                match_type="semantic",
             ),
         ]
         merged = _merge_adjacent_blocks(results)

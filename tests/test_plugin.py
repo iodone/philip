@@ -6,7 +6,8 @@ from importlib import metadata
 
 import pytest
 from bub.channels.message import ChannelMessage, MediaItem
-from bub.types import State
+from bub.hooks.agent import AgentPlugins
+from bub.turn import TurnState
 
 from philip.plugins.plugin import PhilipPlugin
 
@@ -14,6 +15,16 @@ from philip.plugins.plugin import PhilipPlugin
 def test_philip_registers_bub_plugin_entry_point():
     entry_points = metadata.entry_points(group="bub")
     assert any(ep.name == "philip" for ep in entry_points)
+
+
+def test_provide_tools_exposes_vision_tool_through_agent_plugins():
+    plugin = PhilipPlugin(framework=None)  # type: ignore[arg-type]
+    plugins = AgentPlugins(plugins=[plugin])
+
+    tools = plugins.framework.get_tools()
+
+    assert [tool.name for tool in tools] == ["vision.inspect_current_images"]
+    assert tools[0].context is True
 
 
 async def test_load_state_exposes_current_image_media():
@@ -49,7 +60,7 @@ async def test_load_state_empty_media():
 
 def test_system_prompt_advertises_tool_when_images_exist():
     plugin = PhilipPlugin(framework=None)  # type: ignore[arg-type]
-    state: State = {
+    state: TurnState = {
         "vision_current_media": [{"type": "image"}],
         "vision_current_image_count": 1,
     }
@@ -60,7 +71,7 @@ def test_system_prompt_advertises_tool_when_images_exist():
 
 def test_system_prompt_multiple_images():
     plugin = PhilipPlugin(framework=None)  # type: ignore[arg-type]
-    state: State = {
+    state: TurnState = {
         "vision_current_media": [{"type": "image"}, {"type": "image"}],
         "vision_current_image_count": 2,
     }
@@ -70,7 +81,7 @@ def test_system_prompt_multiple_images():
 
 def test_system_prompt_omits_hint_when_no_images():
     plugin = PhilipPlugin(framework=None)  # type: ignore[arg-type]
-    state: State = {
+    state: TurnState = {
         "vision_current_media": [],
         "vision_current_image_count": 0,
     }

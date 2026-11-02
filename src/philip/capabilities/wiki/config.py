@@ -2,20 +2,10 @@
 
 from __future__ import annotations
 
+import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
-
-try:
-    import tomllib  # Python 3.11+
-except ModuleNotFoundError:  # pragma: no cover
-    tomllib = None  # type: ignore[assignment]
-
-try:
-    import toml as _toml  # fallback for TOML writing
-except ModuleNotFoundError:
-    _toml = None  # type: ignore[assignment]
-
 
 # ---------------------------------------------------------------------------
 # Config model
@@ -110,12 +100,8 @@ def require_vault_root(from_path: str | Path = ".") -> Path:
 
 
 def _parse_toml(text: str) -> dict[str, Any]:
-    """Parse TOML text, trying tomllib first, then toml fallback."""
-    if tomllib is not None:
-        return tomllib.loads(text)  # type: ignore[union-attr]
-    if _toml is not None:
-        return _toml.loads(text)  # type: ignore[union-attr]
-    raise RuntimeError("No TOML parser available. Install `toml` or use Python 3.11+.")
+    """Parse TOML text using Python's standard library."""
+    return tomllib.loads(text)
 
 
 def load_config(vault_root: str | Path) -> WikiConfig:

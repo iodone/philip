@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from unittest.mock import AsyncMock, patch
 
-from bub.tools import ToolContext
+from bub.core.tools import ToolContext
 
 from philip.tools.vision_client import VisionClient
 from philip.tools.vision_settings import VisionSettings
@@ -242,7 +242,10 @@ async def test_vision_client_uses_amessages_and_extracts_text(monkeypatch):
     async def fake_amessages(**kwargs):
         captured.update(kwargs)
         return _FakeResponse(
-            [_FakeBlock("text", "可见报错文本：Connection refused"), _FakeBlock("text", "")]
+            [
+                _FakeBlock("text", "可见报错文本：Connection refused"),
+                _FakeBlock("text", ""),
+            ]
         )
 
     monkeypatch.setattr("philip.tools.vision_client.amessages", fake_amessages)

@@ -8,8 +8,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from bub.channels.message import ChannelMessage
+from bub.envelope import Envelope
 from bub.framework import BubFramework
-from bub.types import Envelope
 
 from philip.server.jsonrpc import (
     METHOD_NOT_FOUND,

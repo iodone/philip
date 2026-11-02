@@ -1,7 +1,8 @@
 """Philip CLI — rub standalone adapter."""
 
-import contextlib
-import io
+# ruff: noqa: E402
+
+import logging
 import sys
 import warnings
 
@@ -10,9 +11,9 @@ if not sys.warnoptions:
     warnings.filterwarnings("ignore", category=SyntaxWarning)
 
 # Pre-import jieba silently (suppresses "Building prefix dict" logger output)
-import logging
 logging.getLogger("jieba").setLevel(logging.WARNING)
 import jieba  # noqa: F401
+
 jieba.setLogLevel(logging.WARNING)
 
 from rub.standalone import standalone_cli

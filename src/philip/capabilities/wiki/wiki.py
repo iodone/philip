@@ -116,11 +116,13 @@ def parse_wiki_page(file_path: str | Path, wiki_dir: str | Path) -> WikiPage:
         relative_path=rel,
         slug=slug,
         title=str(meta.get("title", file_path.stem)),
-        description=meta.get("description"),
+        description=(
+            str(description) if (description := meta.get("description")) else None
+        ),
         tags=tags,
         contexts=contexts,
-        created=meta.get("created"),
-        updated=meta.get("updated"),
+        created=str(created) if (created := meta.get("created")) else None,
+        updated=str(updated) if (updated := meta.get("updated")) else None,
         aliases=aliases,
         content=body,
         wikilinks=extract_wikilinks(body),

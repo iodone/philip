@@ -10,7 +10,6 @@ from typing import Any
 
 from dotenv import find_dotenv, load_dotenv
 from loguru import logger
-
 from rub.adapter import ExecutionResult
 from rub.schema import Operation, OperationDetail
 
@@ -43,7 +42,10 @@ DETAILS: dict[str, OperationDetail] = {
                 },
                 "workspace": {
                     "type": "string",
-                    "description": "Path to the workspace directory. Omit to use BUB_WORKSPACE from .env.",
+                    "description": (
+                        "Path to the workspace directory. "
+                        "Omit to use BUB_WORKSPACE from .env."
+                    ),
                 },
             },
         },
