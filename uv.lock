@@ -14,7 +14,7 @@ resolution-markers = [
 ]
 
 [manifest]
-overrides = [{ name = "bub", extras = ["app"], git = "https://github.com/bubbuild/bub.git?rev=0.6.0" }]
+overrides = [{ name = "bub", extras = ["app"], git = "https://github.com/bubbuild/bub.git?rev=0.6.1" }]
 
 [[package]]
 name = "aiohappyeyeballs"
@@ -325,8 +325,8 @@ wheels = [
 
 [[package]]
 name = "bub"
-version = "0.6.0"
-source = { git = "https://github.com/bubbuild/bub.git?rev=0.6.0#760691dfce1b1c802504d993f543d17c6e101d9e" }
+version = "0.6.1"
+source = { git = "https://github.com/bubbuild/bub.git?rev=0.6.1#d14de719da57640cf2f80658217d94d94a5b7c42" }
 dependencies = [
     { name = "loguru" },
     { name = "pydantic" },
@@ -1366,7 +1366,7 @@ dev = [
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.9" },
     { name = "any-llm-sdk", specifier = ">=1.13.0" },
-    { name = "bub", extras = ["app"], git = "https://github.com/bubbuild/bub.git?rev=0.6.0" },
+    { name = "bub", extras = ["app"], git = "https://github.com/bubbuild/bub.git?rev=0.6.1" },
     { name = "bub-im-bridge", git = "https://github.com/iodone/bub-im-bridge.git?rev=4c6587e" },
     { name = "bub-schedule", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-schedule&rev=35c84fb" },
     { name = "bub-web-search", git = "https://github.com/bubbuild/bub-contrib.git?subdirectory=packages%2Fbub-web-search&rev=35c84fb" },
