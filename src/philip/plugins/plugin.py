@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
+import republic
 from bub.channels.base import Channel
+from bub.core.events import LLMCallRequest
 from bub.envelope import content_of, field_of
 from bub.framework import BubFramework
 from bub.hooks import hookimpl
@@ -13,6 +16,28 @@ from bub.turn import TurnState
 
 if TYPE_CHECKING:
     from bub.core.tools import Tool
+
+INVALID_TOOL_NAME = "__invalid_tool_call__"
+"""Placeholder for a recorded tool call whose function name was empty.
+
+Some providers stream a phantom tool-call delta with no name. Bub records it,
+and the next request is rejected with ``tool_calls[N] is missing a function
+name``. The name is unknown and unrecoverable, so the call keeps its identity
+and result but gets a name the provider accepts.
+"""
+
+
+def _sanitize_message(message: republic.Message) -> republic.Message:
+    calls = tuple(
+        call if call.name else replace(call, name=INVALID_TOOL_NAME)
+        for call in message.tool_calls
+    )
+    tool_call = message.tool_call
+    if tool_call is not None and not tool_call.name:
+        tool_call = replace(tool_call, name=INVALID_TOOL_NAME)
+    if calls == message.tool_calls and tool_call is message.tool_call:
+        return message
+    return replace(message, tool_calls=calls, tool_call=tool_call)
 
 
 class PhilipPlugin:
@@ -40,6 +65,17 @@ class PhilipPlugin:
         now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
         context_prefix = f"{context}\n---Date: {now}---\n" if context else ""
         return str(f"{context_prefix}{content}")
+
+    @hookimpl
+    def before_llm_call(
+        self, request: LLMCallRequest, state: TurnState
+    ) -> LLMCallRequest | None:
+        """Repair history entries that providers reject as malformed tool calls."""
+        messages = list(request.messages)
+        sanitized = [_sanitize_message(message) for message in messages]
+        if all(new is old for new, old in zip(sanitized, messages, strict=True)):
+            return None
+        return replace(request, messages=sanitized)
 
     @hookimpl
     async def load_state(self, message: Any, session_id: str) -> TurnState:

@@ -5,11 +5,13 @@ from __future__ import annotations
 from importlib import metadata
 
 import pytest
+import republic
 from bub.channels.message import ChannelMessage, MediaItem
+from bub.core.events import LLMCallRequest
 from bub.hooks.agent import AgentPlugins
 from bub.turn import TurnState
 
-from philip.plugins.plugin import PhilipPlugin
+from philip.plugins.plugin import INVALID_TOOL_NAME, PhilipPlugin
 
 
 def test_philip_registers_bub_plugin_entry_point():
@@ -156,3 +158,53 @@ async def test_build_prompt_strips_images_but_preserves_text():
     # No trace of multimodal content
     assert "image_url" not in prompt
     assert "data:image" not in prompt
+
+
+# ---------------------------------------------------------------------------
+# before_llm_call: never send an empty tool-call name back to a provider
+# ---------------------------------------------------------------------------
+
+
+def test_before_llm_call_repairs_empty_tool_call_name():
+    plugin = PhilipPlugin(framework=None)  # type: ignore[arg-type]
+    phantom = republic.ToolCall("call_1", "", "{}")
+    valid = republic.ToolCall("call_2", "web_search", '{"query": "x"}')
+    result_call = republic.ToolCall("call_1", "", "{}")
+    request = LLMCallRequest(
+        run_id="run-1",
+        model="openai:test",
+        messages=[
+            republic.Message("assistant", tool_calls=(valid, phantom)),
+            republic.Message(
+                "tool",
+                parts=(republic.Text("Tool `` does not exist."),),
+                tool_call=result_call,
+            ),
+        ],
+    )
+
+    updated = plugin.before_llm_call(request, {})
+
+    assert updated is not None
+    assert updated.messages[0].tool_calls[0] is valid
+    assert updated.messages[0].tool_calls[1].name == INVALID_TOOL_NAME
+    assert updated.messages[0].tool_calls[1].id == "call_1"
+    assert updated.messages[1].tool_call is not None
+    assert updated.messages[1].tool_call.name == INVALID_TOOL_NAME
+    assert updated.messages[1].tool_call.id == "call_1"
+
+
+def test_before_llm_call_leaves_clean_history_untouched():
+    plugin = PhilipPlugin(framework=None)  # type: ignore[arg-type]
+    request = LLMCallRequest(
+        run_id="run-1",
+        model="openai:test",
+        messages=[
+            republic.Message(
+                "assistant",
+                tool_calls=(republic.ToolCall("call_1", "web_search", "{}"),),
+            )
+        ],
+    )
+
+    assert plugin.before_llm_call(request, {}) is None
