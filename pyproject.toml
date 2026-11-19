@@ -10,8 +10,8 @@ dependencies = [
     "bub[app] @ git+https://github.com/bubbuild/bub.git@0.6.1",
     # 4c6587e = fix/bub-0-6-0-main 分支头（0.7.6）。tag v0.7.5 更旧，不支持 bub 0.6 的插件 API。
     "bub-im-bridge @ git+https://github.com/iodone/bub-im-bridge.git@4c6587e",
-    "bub-web-search @ git+https://github.com/bubbuild/bub-contrib.git@35c84fb#subdirectory=packages/bub-web-search",
-    "bub-schedule @ git+https://github.com/bubbuild/bub-contrib.git@35c84fb#subdirectory=packages/bub-schedule",
+    "bub-web-search>=0.1.2,<0.2",
+    "bub-schedule>=0.1.2,<0.2",
     "jieba>=0.42",
     "python-frontmatter>=1.0",
     "ripgrepy>=2.2",
@@ -50,9 +50,6 @@ allow-direct-references = true
 
 [tool.uv]
 default-groups = []
-override-dependencies = [
-    "bub[app] @ git+https://github.com/bubbuild/bub.git@0.6.1",
-]
 
 [tool.ruff]
 target-version = "py312"
